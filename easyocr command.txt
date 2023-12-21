@@ -8,9 +8,9 @@ trdg -l ko -c 100 -w 5 --output_dir "C:\Users\karuj\Desktop\EasyocrWorkspace\ste
 
 
 이미지를 텍스트로
-python convert.py --input_path "C:\Users\karuj\Desktop\EasyocrWorkspace\step1\training" --output_path "C:\Users\karuj\Desktop\EasyocrWorkspace\step2\training\kordata"
+python convert.py --input_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step1\training" --output_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\training\kordata"
 
-python convert.py --input_path "C:\Users\karuj\Desktop\EasyocrWorkspace\step1\validation" --output_path "C:\Users\karuj\Desktop\EasyocrWorkspace\step2\validation\kordata"
+python convert.py --input_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step1\validation" --output_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\validation\kordata"
 
 
 lmdb생성
@@ -23,4 +23,16 @@ pretrained_model 생성
 python demo.py --Transformation None --FeatureExtraction VGG --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image/ --saved_model ./models/None-VGG-BiLSTM-CTC.pth
 
 학습
-python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --input_channel 1 --output_channel 256 --hidden_size 256 --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\user_network_dir\custom.pth" --FT
+NONE-VGG-BILSTM-CTC
+python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --input_channel 1 --output_channel 256 --hidden_size 256  --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\user_network_dir\custom.pth" --FT
+
+
+TPS-RESNET-BILSTM-ATTN
+
+python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
+
+python train.py --train_data data_lmdb/training --valid_data data_lmdb/validation --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn
+
+
+
+

@@ -53,12 +53,14 @@ def get_naver_news_content(start_page=1, end_page=104):
             if title not in unique_titles:
                 unique_titles.add(title)
 
-                #first_half, second_half = split_title(title)
+                ######이거
+                first_half, second_half = split_title(title)
 
                 item = {
-                    "title": title,
-                #    "title_first_half": first_half,
-                #    "title_second_half": second_half,
+                    ###이거
+                    #"title": title,
+                    "title_first_half": first_half,
+                    "title_second_half": second_half,
                 }
 
                 contents.append(item)
@@ -66,18 +68,18 @@ def get_naver_news_content(start_page=1, end_page=104):
     driver.quit()  # 작업이 끝나면 드라이버 종료
 
     return contents
-
-#def save_to_text(contents, filename="output.txt"):
-#    with open(filename, "w", encoding="utf-8") as file:
-#        for content in contents:
-#            file.write(f"{content['title_first_half']}\n")
-#            file.write(f"{content['title_second_half']}\n")
-
-
+###문자열 자르기
 def save_to_text(contents, filename="output.txt"):
     with open(filename, "w", encoding="utf-8") as file:
         for content in contents:
-            file.write(f"{content['title']}\n")
+            file.write(f"{content['title_first_half']}\n")
+            file.write(f"{content['title_second_half']}\n")
+
+### defualt
+#def save_to_text(contents, filename="output.txt"):
+#    with open(filename, "w", encoding="utf-8") as file:
+#        for content in contents:
+#            file.write(f"{content['title']}\n")
 
 
 def open_notepad(filename="output.txt"):
