@@ -6,8 +6,8 @@ import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def sanitize_filename(text):
-    return re.sub(r'[\\/:*?"<>|]', '_', text)
+# def sanitize_filename(text):
+#     return re.sub(r'[\\/:*?"<>|]', '_', text)
 
 
 def create_text_image(text, font_path, validation_output_path, counter):
@@ -32,7 +32,7 @@ def create_text_image(text, font_path, validation_output_path, counter):
         position = ((width - text_width) // 2, (height - text_height) // 2)
         draw.text(position, text, font=font, fill='black')
 
-        sanitized_text = sanitize_filename(text)
+        # sanitized_text = sanitize_filename(text)
 
         output_path = os.path.join(validation_output_path, f"images\image_{counter:04d}.jpg")
         img.save(output_path)
@@ -54,12 +54,14 @@ def delete_files_in_directory(directory):
                 print(f"파일 삭제 오류 {file_path}: {e}")
 
 
-font_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/ko/malgunbd.ttf"
-korean_font_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/font/malgunbd.ttf"
-chinese_font_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/font/SourceHanSansK-Regular.otf"  
-text_file_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/headlinedatatxt/combine.txt"
-training_output_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/step2/training/kordata/"
-validation_output_path = "C:/Users/gemiso/Desktop/EasyocrWorkspace/step2/validation/kordata/"
+script_directory = os.path.dirname(__file__)
+
+font_path = os.path.join(script_directory, "ko/malgunbd.ttf")
+korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
+chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
+text_file_path = os.path.join(script_directory, "headlinedatatxt/combine.txt")
+training_output_path = os.path.join(script_directory, "step2/training/kordata/")
+validation_output_path = os.path.join(script_directory, "step2/validation/kordata/")
 
 
 # Create the 'images' folder if it doesn't exist
@@ -85,10 +87,7 @@ with open(text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(trai
             gt_file.write(f"{image_path}\t{text_content}\n")
             counter += 1
 
-        ######## 이미지 생성 갯수 #########
-        #if counter == 280:
-        #   break
-            
+        
 
 def count_images_in_directory(output_path):
     count = 0
@@ -114,10 +113,10 @@ with open(text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(vali
             counter += 1
 
         ######## 이미지 생성 갯수 초과 여부 확인 #########
-        if counter > int(total_images/10):
+        if counter > int(total_images*0.4):
             break
 
 
 
 print(f"training 데이터셋이 {total_images}개 생성되었습니다.")
-print(f"validation데이터셋 데이터셋이 {int(total_images/10)}개 생성되었습니다.")
+print(f"validation데이터셋 데이터셋이 {int(total_images*0.4)}개 생성되었습니다.")
