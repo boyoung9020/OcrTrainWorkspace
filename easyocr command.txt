@@ -28,12 +28,24 @@ python demo.py --Transformation TPS --FeatureExtraction ResNet --SequenceModelin
 
 학습
 NONE-VGG-BILSTM-CTC
+
 python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --input_channel 1 --output_channel 256 --hidden_size 256  --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\user_network_dir\custom.pth" --FT
+
+
+
+-----------------------------------SCRACTH
+
+NONE-VGG-BILSTM-CTC
+
+python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
 
 
 TPS-RESNET-BILSTM-ATTN
 
+#######################
 python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
+#######################
+
 
 python train.py --train_data data_lmdb/training --valid_data data_lmdb/validation --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn
 
