@@ -60,6 +60,7 @@ font_path = os.path.join(script_directory, "ko/malgunbd.ttf")
 korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
 chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
 text_file_path = os.path.join(script_directory, "headlinedatatxt/combine.txt")
+validation_text_file_path = os.path.join(script_directory, "headlinedatatxt/all_category.txt")
 training_output_path = os.path.join(script_directory, "step2/training/kordata/")
 validation_output_path = os.path.join(script_directory, "step2/validation/kordata/")
 
@@ -100,7 +101,7 @@ def count_images_in_directory(output_path):
 
 
 
-with open(text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+with open(validation_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
     total_images = count_images_in_directory(training_output_path)
     lines = file.readlines()
     counter = 0
@@ -116,7 +117,7 @@ with open(text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(vali
         if counter > int(total_images*0.4):
             break
 
-
+            total_images*0.4
 
 print(f"training 데이터셋이 {total_images}개 생성되었습니다.")
 print(f"validation데이터셋 데이터셋이 {int(total_images*0.4)}개 생성되었습니다.")
