@@ -22,10 +22,19 @@ from model import Model
 from test import validation
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+current_time = datetime.now()
+formatted_time = current_time.strftime("%y%m%d.%H%M%S")
+
 
 def train(opt):
+    backupdir = f'({formatted_time}){opt.exp_name}'
+    os.makedirs(f'./saved_models/{backupdir}', exist_ok=True)
+    print('-' * 80)
+    print(f'{backupdir}+백업폴더 생성 완료')
+
     """ 데이터셋 준비 """
     if not opt.data_filtering_off:
+        print('-' * 80)
         print('opt.character에 없는 문자가 있는 이미지를 필터링합니다.')
         print('opt.batch_max_length보다 긴 레이블을 가진 이미지를 필터링합니다.')
         # see https://github.com/clovaai/deep-text-recognition-benchmark/blob/6593928855fb7abb999a99f428b3e4477d4ae356/dataset.py#L130
@@ -34,7 +43,7 @@ def train(opt):
     opt.batch_ratio = opt.batch_ratio.split('-')
     train_dataset = Batch_Balanced_Dataset(opt)
 
-    log = open(f'./saved_models/{opt.exp_name}/log_dataset.txt', 'a')
+    log = open(f'./saved_models/{backupdir}/log_dataset.txt', 'a')
     AlignCollate_valid = AlignCollate(imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD)
     valid_dataset, valid_dataset_log = hierarchical_dataset(root=opt.valid_data, opt=opt)
     valid_loader = torch.utils.data.DataLoader(
@@ -123,7 +132,7 @@ def train(opt):
 
     """ 최종 옵션 """
     # print(opt)
-    with open(f'./saved_models/{opt.exp_name}/opt.txt', 'a') as opt_file:
+    with open(f'./saved_models/{backupdir}/opt.txt', 'a') as opt_file:
         opt_log = '------------ 옵션 -------------\n'
         args = vars(opt)
         for k, v in args.items():
@@ -179,7 +188,7 @@ def train(opt):
         if (iteration + 1) % opt.valInterval == 0 or iteration == 0: # To see training progress, we also conduct validation when 'iteration == 0' 
             elapsed_time = time.time() - start_time
             # for log
-            with open(f'./saved_models/{opt.exp_name}/log_train.txt', 'a') as log:
+            with open(f'./saved_models/{backupdir}/log_train.txt', 'a') as log:
                 model.eval()
                 with torch.no_grad():
                     valid_loss, current_accuracy, current_norm_ED, preds, confidence_score, labels, infer_time, length_of_data = validation(
@@ -194,19 +203,18 @@ def train(opt):
 
                 # keep best accuracy model (on valid dataset)
                 #####################current_accuaracy저장####################################
-                torch.save(model.state_dict(), f'./saved_models/{opt.exp_name}/current_accuaracy.pth')
+                torch.save(model.state_dict(), f'./saved_models/{backupdir}/current_accuaracy.pth')
                 #########################################################
 
                 if current_accuracy > best_accuracy:
                     best_accuracy = current_accuracy
-                    torch.save(model.state_dict(), f'./saved_models/{opt.exp_name}/best_accuracy.pth')
+                    torch.save(model.state_dict(), f'./saved_models/{backupdir}/best_accuracy.pth')
                 if current_norm_ED > best_norm_ED:
                     best_norm_ED = current_norm_ED
-                    torch.save(model.state_dict(), f'./saved_models/{opt.exp_name}/best_norm_ED.pth')
+                    torch.save(model.state_dict(), f'./saved_models/{backupdir}/best_norm_ED.pth')
                 best_model_log = f'{"Best_accuracy":17s}: {best_accuracy:0.3f}, {"Best_norm_ED":17s}: {best_norm_ED:0.2f}'
 
-                current_time = datetime.now()
-                formatted_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+                
                 timenow = f"현재시간 : {formatted_time}"
 
                 loss_model_log = f'{timenow}\n{loss_log}\n{current_model_log}\n{best_model_log}'
@@ -230,7 +238,7 @@ def train(opt):
         # save model per 1e+5 iter.
         if (iteration + 1) % 1e+5 == 0:
             torch.save(
-                model.state_dict(), f'./saved_models/{opt.exp_name}/iter_{iteration+1}.pth')
+                model.state_dict(), f'./saved_models/{backupdir}/iter_{iteration+1}.pth')
 
         if (iteration + 1) == opt.num_iter:
             print('end the training')
@@ -248,7 +256,7 @@ if __name__ == '__main__':
     parser.add_argument('--manualSeed', type=int, default=1111, help='for random seed setting')
     #건들
     parser.add_argument('--workers', type=int, help='number of data loading workers', default=0)
-    parser.add_argument('--batch_size', type=int, default=200, help='input batch size')
+    parser.add_argument('--batch_size', type=int, default=300, help='input batch size')
     parser.add_argument('--num_iter', type=int, default=300000, help='number of iterations to train for')
     #건들
     parser.add_argument('--valInterval', type=int, default=300, help='Interval between each validation')
@@ -299,7 +307,6 @@ if __name__ == '__main__':
         opt.exp_name += f'-Seed{opt.manualSeed}'
         # print(opt.exp_name)
 
-    os.makedirs(f'./saved_models/{opt.exp_name}', exist_ok=True)
 
 
 
