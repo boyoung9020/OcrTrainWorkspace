@@ -2,89 +2,69 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 import re
 from tqdm import tqdm
+import random
+from itertools import islice
 import warnings
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 # def sanitize_filename(text):
 #     return re.sub(r'[\\/:*?"<>|]', '_', text)
 
 
-def create_text_images(text, font_path, validation_output_path, counter):
-    words = text.split()  # 공백을 기준으로 단어 분리
-    height = 120
-    width = 1625
+def create_text_images(words, font_path, save_output_path, counter):
+    
+        target_height_ratio = 0.9  # 이미지 배경 크기의 90%
+        width = 1625
+        height = int(120 * target_height_ratio)  # 텍스트 높이 설정
+        max_font_size = 80  # 최대 폰트 크기
 
-    image_paths = []  # 각 단어 이미지의 경로를 저장할 리스트
-    labels = []  # 각 단어 이미지의 라벨을 저장할 리스트
+        image_paths = []  # 각 단어 이미지의 경로를 저장할 리스트
+        labels = []  # 각 단어 이미지의 라벨을 저장할 리스트
 
-    for word in words:
-        img = Image.new('RGB', (width, height), color='white')
+        # 배경을 흰색(255)으로 하는 이미지 생성
+        img = Image.new('L', (width, height), color=255)  # 'L' 모드는 8비트 흑백 이미지를 의미
         draw = ImageDraw.Draw(img)
 
         # 단어의 언어에 따라 폰트 선택
-        if any('\u4e00' <= char <= '\u9fff' for char in word):
-            font = ImageFont.truetype(chinese_font_path, size=70)
+        if any('\u4e00' <= char <= '\u9fff' for char in words):
+            font_size = max_font_size  # 폰트 크기를 최대 크기로 설정
+            font = ImageFont.truetype(chinese_font_path, size=font_size)
         else:
-            font = ImageFont.truetype(korean_font_path, size=65)
+            font_size = max_font_size  # 폰트 크기를 최대 크기로 설정
+            font = ImageFont.truetype(font_path, size=font_size)
 
-        # 이미지에 단어 그리기
-        text_size = draw.textsize(word, font)
-        text_width, text_height = text_size
-        position = ((width - text_width) // 2, (height - text_height) // 2)
-        draw.text(position, word, font=font, fill='black')
+        # 텍스트의 너비 계산
+        text_width, text_height = draw.textsize(words, font)
+        print(text_width, text_height)
+
+        # 텍스트의 간격을 동적으로 조절하여 이미지에 맞게 배치
+        while text_width > width or text_height > height:
+            font_size -= 1
+            if font_size < 1:
+                break  # 폰트 크기가 1보다 작아지면 종료
+            font = ImageFont.truetype(font_path, size=font_size )
+            text_width, text_height = draw.textsize(words, font)
+
+        # 텍스트 위치 계산하여 조정
+        position = ((width - text_width) // 2, ((height - text_height) // 2)-10)
+        print((width - text_width) // 2, (height - text_height) // 2)
+
+        # 폰트를 검은색(0)으로 설정하여 그리기
+        draw.text(position, words, font=font, fill=0,spacing=25)  # 0은 팔레트에서의 검은색
+    
+        img = img.resize((1625, 120), Image.ANTIALIAS)
 
         # 이미지 저장
-        output_path = os.path.join(training_output_path, f"images\image_{counter:04d}.jpg")
+        output_path = os.path.join(save_output_path, f"images\image_{counter:04d}.png")
         img.save(output_path)
-        image_paths.append(output_path.replace(os.path.join(validation_output_path, ''), ''))
-        labels.append(word)
+        image_paths.append(output_path.replace(os.path.join(save_output_path, ''), ''))
+        labels.append(words)
 
-        counter += 1
-
-    return image_paths, labels
-
-
-def create_text_image(text, font_path, validation_output_path, counter):
-    # if len(text) < 30:
-        height = 120
-
-        # 기본 넓이 설정
-        base_width = 1625
-        img = Image.new('RGB', (base_width, height), color='white')
-        draw = ImageDraw.Draw(img)
-
-        # 한글 및 한문 폰트 경로
-        chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
-        korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
-
-        # 텍스트가 한문인 경우 한문 폰트 사용
-        if any('\u4e00' <= char <= '\u9fff' for char in text):
-            font = ImageFont.truetype(chinese_font_path, size=70)
-        else:
-            font = ImageFont.truetype(korean_font_path, size=65)
-
-        # 텍스트 그리기
-        text_size = draw.textsize(text, font)
-
-        # 텍스트 길이에 따라 동적으로 넓이 조정
-        text_width, text_height = text_size
-        width = max(base_width, text_width + 20)  # 최소 넓이는 기본 넓이보다 크게 설정
-        img = Image.new('RGB', (width, height), color='white')
-        draw = ImageDraw.Draw(img)
-
-        position = ((width - text_width) // 2, (height - text_height) // 2)
-        draw.text(position, text, font=font, fill='black')
-
-        output_path = os.path.join(validation_output_path, f"images/image_{counter:04d}.jpg")
-        img.save(output_path)
-
-        return output_path.replace(os.path.join(validation_output_path, ''), ''), text
-
-    # return None
-
-
-
+        return image_paths, labels
+    
+    
 
 def delete_files_in_directory(directory):
     for root, dirs, files in os.walk(directory):
@@ -99,13 +79,20 @@ def delete_files_in_directory(directory):
 
 script_directory = os.path.dirname(__file__)
 
-font_path = os.path.join(script_directory, "ko/malgunbd.ttf")
-korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
-chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
-text_file_path = os.path.join(script_directory, "headlinedatatxt/combine.txt")
-validation_text_file_path = os.path.join(script_directory, "headlinedatatxt/all_category.txt")
+training_text_file_path = os.path.join(script_directory, "headlinedatatxt/all_category.txt")
+training_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/all_category_split.txt")
+validation_text_file_path = os.path.join(script_directory, "headlinedatatxt/validation_all_category.txt")
+validation_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/validation_all_category_split.txt")
 training_output_path = os.path.join(script_directory, "step2/training/kordata/")
+test_output_path = os.path.join(script_directory, "step2/test/kordata/")
 validation_output_path = os.path.join(script_directory, "step2/validation/kordata/")
+test_text_file_path = os.path.join(script_directory, "headlinedatatxt/test_all_category.txt")
+test_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/test_all_category_split.txt")
+
+
+chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
+korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
+font_path =  os.path.join(script_directory, "font/malgunbd.ttf")
 
 
 images_folder_path = os.path.join(training_output_path, 'images')
@@ -118,17 +105,7 @@ if not os.path.exists(images_folder_path):
 
 delete_files_in_directory(training_output_path)
 delete_files_in_directory(validation_output_path)
-
-with open(text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-    lines = file.readlines()
-    counter = 0
-    for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
-        line = line.strip()
-        image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
-        for image_path, label in zip(image_paths, labels):
-            gt_file.write(f"{image_path}\t{label}\n")
-        counter += 1
-        
+delete_files_in_directory(test_output_path)
 
 def count_images_in_directory(output_path):
     count = 0
@@ -140,24 +117,80 @@ def count_images_in_directory(output_path):
     return count
 
 
+def split_and_save(text_file_path, split_text_file_path):
+    with open(text_file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
 
-with open(validation_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-    total_images = count_images_in_directory(training_output_path)
+    sentences = content.split()
+    
+    with open(split_text_file_path, 'w', encoding='utf-8') as f:
+        for sentence in sentences:
+            f.write(sentence + '\n')
+
+
+split_and_save(training_text_file_path, training_split_text_file_path)
+split_and_save(validation_text_file_path, validation_split_text_file_path)
+split_and_save(test_text_file_path,test_split_text_file_path)
+
+
+####### training데이터셋 생성
+with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
     lines = file.readlines()
     counter = 0
-    for line in tqdm(lines, desc="validation데이터셋 생성 진행 중"):
+    for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
         line = line.strip()
-        result = create_text_image(line, font_path, validation_output_path, counter)
-        if result:
-            image_path, text_content = result
-            gt_file.write(f"{image_path}\t{text_content}\n")
-            counter += 1
+        image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
+        for image_path, label in zip(image_paths, labels):
+            gt_file.write(f"{image_path}\t{label}\n")
+        counter += 1
 
-        ######## 이미지 생성 갯수 초과 여부 확인 #########
-        if counter > int(total_images*0.4):
+        
+
+
+
+######## validation데이터셋 생성
+with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+    total_images = count_images_in_directory(training_output_path)
+    validation_images_count = int(total_images*0.01)
+    lines = file.readlines()
+    random.shuffle(lines)
+    counter = 0
+    for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
+        line = line.strip()
+        if len(line) <32 :
+            image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
+            for image_path, label in zip(image_paths, labels):
+                gt_file.write(f"{image_path}\t{label}\n")
+            counter += 1
+        
+
+        if counter > 10:
             break
 
-            total_images*0.4
+
+######## test데이터셋 생성
+with open(test_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+    lines = file.readlines()
+    random.shuffle(lines)
+    counter = 0
+    for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
+        line = line.strip()
+        if len(line) <32 :
+            image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
+            for image_path, label in zip(image_paths, labels):
+                gt_file.write(f"{image_path}\t{label}\n")
+            counter += 1
+        
+   
+
+
+
+
+
+
+
+
+
 
 print(f"training 데이터셋이 {total_images}개 생성되었습니다.")
-print(f"validation데이터셋 데이터셋이 {int(total_images*0.4)}개 생성되었습니다.")
+print(f"validation데이터셋 데이터셋이 {validation_images_count}개 생성되었습니다.")
