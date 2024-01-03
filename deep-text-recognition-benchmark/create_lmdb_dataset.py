@@ -33,7 +33,7 @@ def createDataset(inputPath, gtFile, outputPath, checkValid=True):
 
     # Windows에서 유니코드 경로를 처리하기 위해 Path 객체 사용
 
-    env = lmdb.open(outputPath, map_size=1099511627776/1024)  # str() 사용하여 경로 문자열로 변환
+    env = lmdb.open(outputPath, map_size=10000000000)  # str() 사용하여 경로 문자열로 변환
     cache = {}
     cnt = 1
 

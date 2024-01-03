@@ -16,13 +16,14 @@ import torchvision.transforms as transforms
 
 class Batch_Balanced_Dataset(object):
 
-    def __init__(self, opt):
+    def __init__(self, opt,backupdir):
         """
         Modulate the data ratio in the batch.
         For example, when select_data is "MJ-ST" and batch_ratio is "0.5-0.5",
         the 50% of the batch is filled with MJ and the other 50% of the batch is filled with ST.
         """
-        log = open(f'./saved_models/{opt.exp_name}/log_dataset.txt', 'a')
+        backupdir=backupdir
+        log = open(f'./saved_models/{backupdir}/log_dataset.txt', 'a')
         dashed_line = '-' * 80
         print(dashed_line)
         log.write(dashed_line + '\n')

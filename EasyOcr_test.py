@@ -30,10 +30,10 @@ if __name__ == '__main__':
     # Using custom model
     reader = Reader(['ko'], gpu=True,
                     model_storage_directory=os.path.join(script_directory, "user_network_dir/"),
-                    user_network_directory=os.path.join(script_directory, "user_network_dir/")',
+                    user_network_directory=os.path.join(script_directory, "user_network_dir/"),
                     recog_network='custom')
 
-    files, count = get_files(os.path.join(script_directory, "test Image/"))
+    files, count = get_files(os.path.join(script_directory, r".\deep-text-recognition-benchmark\demo_image"))
 
     # 정규식을 이용하여 파일명에서 숫자 부분을 추출하여 정렬
     sorted_files = sorted(files, key=lambda x: int(re.search(r'\d+', x).group()))

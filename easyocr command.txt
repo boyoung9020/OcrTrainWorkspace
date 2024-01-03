@@ -29,7 +29,7 @@ python demo.py --Transformation TPS --FeatureExtraction ResNet --SequenceModelin
 학습
 NONE-VGG-BILSTM-CTC
 
-python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --input_channel 1 --output_channel 256 --hidden_size 256  --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\user_network_dir\custom.pth" --FT
+python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\deep-text-recognition-benchmark\models\None-VGG-BiLSTM-CTC.pth" --FT
 
 
 
