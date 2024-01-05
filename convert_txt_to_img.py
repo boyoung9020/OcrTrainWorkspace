@@ -38,7 +38,7 @@ def create_text_images(words, font_path, save_output_path, counter):
     x_position = ((image_size[0] - text_width) // 2) + 80  # 가로 중앙 정렬
     y_position = ((image_size[1] - text_height) // 2) - 11  # 세로 중앙 정렬
 
-    character_spacing = -8
+    character_spacing = -7
     current_x_position = x_position
     
     for char in filtered_words:
@@ -70,15 +70,15 @@ def delete_files_in_directory(directory):
 
 script_directory = os.path.dirname(__file__)
 
-training_text_file_path = os.path.join(script_directory, "headlinedatatxt/training_all_category.txt")
-training_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/training_all_category_split.txt")
-validation_text_file_path = os.path.join(script_directory, "headlinedatatxt/validation_all_category.txt")
-validation_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/validation_all_category_split.txt")
+training_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/training_all_category.txt")
+training_split_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/training_all_category_split.txt")
+validation_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/validation_all_category.txt")
+validation_split_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/validation_all_category_split.txt")
 training_output_path = os.path.join(script_directory, "step2/training/kordata/")
 test_output_path = os.path.join(script_directory, "step2/test/kordata/")
 validation_output_path = os.path.join(script_directory, "step2/validation/kordata/")
-test_text_file_path = os.path.join(script_directory, "headlinedatatxt/test_all_category.txt")
-test_split_text_file_path = os.path.join(script_directory, "headlinedatatxt/test_all_category_split.txt")
+test_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/test_all_category.txt")
+test_split_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/test_all_category_split.txt")
 
 
 chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
@@ -95,8 +95,8 @@ if not os.path.exists(images_folder_path):
     os.makedirs(images_folder_path)
 
 # delete_files_in_directory(training_output_path)
-# delete_files_in_directory(validation_output_path)
-delete_files_in_directory(test_output_path)
+delete_files_in_directory(validation_output_path)
+# delete_files_in_directory(test_output_path)
 
 def count_images_in_directory(output_path):
     count = 0
@@ -119,12 +119,12 @@ def split_and_save(text_file_path, split_text_file_path):
             f.write(sentence + '\n')
 
 
-# split_and_save(training_text_file_path, training_split_text_file_path)
-# split_and_save(validation_text_file_path, validation_split_text_file_path)
+split_and_save(training_text_file_path, training_split_text_file_path)
+split_and_save(validation_text_file_path, validation_split_text_file_path)
 
 
 # ####### training데이터셋 생성
-# with open(training_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+# with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
 #     lines = file.readlines()
 #     counter = 0
 #     for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
@@ -139,40 +139,39 @@ def split_and_save(text_file_path, split_text_file_path):
 
 
 
-######## validation데이터셋 생성
-# with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-#     total_images = count_images_in_directory(training_output_path)
-#     validation_images_count = int(total_images*0.01)
-#     lines = file.readlines()
-#     random.shuffle(lines)
-#     counter = 0
-#     for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
-#         line = line.strip()
-#         if len(line) <32 :
-#             image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
-#             for image_path, label in zip(image_paths, labels):
-#                 gt_file.write(f"{image_path}\t{label}\n")
-#             counter += 1
-        
-
-#         if counter > 10:
-#             break
-
-
-####### test데이터셋 생성
-with open(test_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+####### validation데이터셋 생성
+with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+    total_images = count_images_in_directory(training_output_path)
+    validation_images_count = int(total_images*0.01)
     lines = file.readlines()
     random.shuffle(lines)
     counter = 0
-    for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
+    for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
         line = line.strip()
-        if len(line) <25 :
-            image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
+        if len(line) <32 :
+            image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
             for image_path, label in zip(image_paths, labels):
                 gt_file.write(f"{image_path}\t{label}\n")
             counter += 1
-        if counter > 100:
-            break        
+
+        if counter > validation_images_count :
+            break
+
+
+# ####### test데이터셋 생성
+# with open(test_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+#     lines = file.readlines()
+#     random.shuffle(lines)
+#     counter = 0
+#     for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
+#         line = line.strip()
+#         if len(line) <25 :
+#             image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
+#             for image_path, label in zip(image_paths, labels):
+#                 gt_file.write(f"{image_path}\t{label}\n")
+#             counter += 1
+#         if counter > 100:
+#             break        
    
 
 
