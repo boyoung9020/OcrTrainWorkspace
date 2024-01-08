@@ -68,6 +68,29 @@ def delete_files_in_directory(directory):
                 print(f"파일 삭제 오류 {file_path}: {e}")
 
 
+def count_images_in_directory(output_path):
+    count = 0
+    images_folder_path = os.path.join(output_path, 'images')
+    for filename in os.listdir(images_folder_path):
+        file_path = os.path.join(images_folder_path, filename)
+        if os.path.isfile(file_path) and file_path.lower().endswith('.jpg'):
+            count += 1
+    return count
+
+
+
+def split_and_save(text_file_path, split_text_file_path):
+    with open(text_file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    sentences = content.split()
+
+    with open(split_text_file_path, 'w', encoding='utf-8') as f:
+        for sentence in tqdm(sentences, desc='Splitting', unit='sentence'):
+            f.write(sentence + '\n')
+
+
+
+
 script_directory = os.path.dirname(__file__)
 
 training_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/training_all_category.txt")
@@ -79,8 +102,6 @@ test_output_path = os.path.join(script_directory, "step2/test/kordata/")
 validation_output_path = os.path.join(script_directory, "step2/validation/kordata/")
 test_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/test_all_category.txt")
 test_split_text_file_path = os.path.join(script_directory, "crawling/headlinedatatxt/test_all_category_split.txt")
-
-
 chinese_font_path = os.path.join(script_directory, "font/SourceHanSansK-Regular.otf")
 korean_font_path = os.path.join(script_directory, "font/malgunbd.ttf")
 font_path =  os.path.join(script_directory, "font/malgunbd.ttf")
@@ -89,100 +110,77 @@ font_path =  os.path.join(script_directory, "font/malgunbd.ttf")
 images_folder_path = os.path.join(training_output_path, 'images')
 if not os.path.exists(images_folder_path):
     os.makedirs(images_folder_path)
-    
+
 images_folder_path = os.path.join(validation_output_path, 'images')
 if not os.path.exists(images_folder_path):
     os.makedirs(images_folder_path)
 
-# delete_files_in_directory(training_output_path)
-delete_files_in_directory(validation_output_path)
-# delete_files_in_directory(test_output_path)
-
-def count_images_in_directory(output_path):
-    count = 0
-    images_folder_path = os.path.join(output_path, 'images')
-    for filename in os.listdir(images_folder_path):
-        file_path = os.path.join(images_folder_path, filename)
-        if os.path.isfile(file_path) and file_path.lower().endswith('.jpg'):
-            count += 1
-    return count
+images_folder_path = os.path.join(test_output_path, 'images')
+if not os.path.exists(images_folder_path):
+    os.makedirs(images_folder_path)
 
 
-def split_and_save(text_file_path, split_text_file_path):
-    with open(text_file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
 
-    sentences = content.split()
+def main() :
     
-    with open(split_text_file_path, 'w', encoding='utf-8') as f:
-        for sentence in sentences:
-            f.write(sentence + '\n')
+    delete_files_in_directory(training_output_path)
+    delete_files_in_directory(validation_output_path)
+    delete_files_in_directory(test_output_path)
+
+    split_and_save(training_text_file_path, training_split_text_file_path)
+    split_and_save(validation_text_file_path, validation_split_text_file_path)
 
 
-split_and_save(training_text_file_path, training_split_text_file_path)
-split_and_save(validation_text_file_path, validation_split_text_file_path)
+    ###### training데이터셋 생성
+    with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+        lines = file.readlines()
+        counter = 0
+        for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
+            line = line.strip()
+            if len(line) <26 :
+                image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
+                for image_path, label in zip(image_paths, labels):
+                    gt_file.write(f"{image_path}\t{label}\n")
+                counter += 1
 
 
-# ####### training데이터셋 생성
-# with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-#     lines = file.readlines()
-#     counter = 0
-#     for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
-#         line = line.strip()
-#         if len(line) <26 :
-#             image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
-#             for image_path, label in zip(image_paths, labels):
-#                 gt_file.write(f"{image_path}\t{label}\n")
-#             counter += 1
+    ####### validation데이터셋 생성
+    with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+        total_images = count_images_in_directory(training_output_path)
+        validation_images_count = int(total_images*0.01)
+        lines = file.readlines()
+        random.shuffle(lines)
+        counter = 0
+        for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
+            line = line.strip()
+            if len(line) <32 :
+                image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
+                for image_path, label in zip(image_paths, labels):
+                    gt_file.write(f"{image_path}\t{label}\n")
+                counter += 1
 
-        
+            if counter > validation_images_count :
+                break
 
-
-
-####### validation데이터셋 생성
-with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-    total_images = count_images_in_directory(training_output_path)
-    validation_images_count = int(total_images*0.01)
-    lines = file.readlines()
-    random.shuffle(lines)
-    counter = 0
-    for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
-        line = line.strip()
-        if len(line) <32 :
-            image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
-            for image_path, label in zip(image_paths, labels):
-                gt_file.write(f"{image_path}\t{label}\n")
-            counter += 1
-
-        if counter > validation_images_count :
-            break
-
-
-# ####### test데이터셋 생성
-# with open(test_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-#     lines = file.readlines()
-#     random.shuffle(lines)
-#     counter = 0
-#     for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
-#         line = line.strip()
-#         if len(line) <25 :
-#             image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
-#             for image_path, label in zip(image_paths, labels):
-#                 gt_file.write(f"{image_path}\t{label}\n")
-#             counter += 1
-#         if counter > 100:
-#             break        
-   
+    ####### test데이터셋 생성
+    with open(test_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
+        lines = file.readlines()
+        random.shuffle(lines)
+        counter = 0
+        for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
+            line = line.strip()
+            if len(line) <25 :
+                image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
+                for image_path, label in zip(image_paths, labels):
+                    gt_file.write(f"{image_path}\t{label}\n")
+                counter += 1
+            if counter > 100:
+                break        
+    
+    print(f"training 데이터셋이 {count_images_in_directory(training_output_path)}개 생성되었습니다.")
+    print(f"validation데이터셋 데이터셋이 {count_images_in_directory(validation_output_path)}개 생성되었습니다.")
+    print(f"test데이터셋 데이터셋이 {count_images_in_directory(test_output_path)}개 생성되었습니다.")
 
 
-
-
-
-
-
-
-
-
-print(f"training 데이터셋이 {count_images_in_directory(training_output_path)}개 생성되었습니다.")
-print(f"validation데이터셋 데이터셋이 {count_images_in_directory(validation_output_path)}개 생성되었습니다.")
-print(f"test데이터셋 데이터셋이 {count_images_in_directory(test_output_path)}개 생성되었습니다.")
+if __name__ == "__main__":
+    main()    

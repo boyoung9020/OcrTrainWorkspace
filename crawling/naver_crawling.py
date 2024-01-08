@@ -33,7 +33,7 @@ def clean_title(title):
 # 세계       104       100페이지    97  
 # IT/과학    105       80페이지     70
 
-category = {100: 200, 101: 400, 102: 600, 103: 90, 104: 100, 105: 90}
+category = {100: 2, 101: 4, 102: 6, 103: 9, 104: 1, 105: 9}
 
 def get_naver_news_content(start_page=1):
     all_contents = []  # 각 카테고리의 결과를 모아서 반환할 리스트
@@ -43,7 +43,7 @@ def get_naver_news_content(start_page=1):
         base_url2 = "page={}"
 
         options = Options()
-        #options.add_argument("--headless")  # 백그라운드 모드로 실행 (창이 뜨지 않음)
+        options.add_argument("--headless")  # 백그라운드 모드로 실행 (창이 뜨지 않음)
         driver = webdriver.Chrome(options=options)
 
         unique_titles = set()
@@ -92,19 +92,39 @@ def get_naver_news_content(start_page=1):
     return all_contents  # 최종적으로 전체 결과 반환
 
 def save_to_text(all_contents, filename=f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
+    # 백업용
     with open(filename, "w", encoding="utf-8") as file:
         for content in all_contents:
             file.write(f"{content['title']}\n")
+    # 전체저장
+    with open('all_headline.txt', 'a', encoding='utf-8') as file:
+        for content in all_contents:
+            file.write(f"{content['title']}\n")
+        
+    # 중복제거
+    with open('all_headline.txt', 'r', encoding='utf-8') as infile:
+        lines = infile.readlines()
+
+    unique_lines = list(set(lines))
+    # 다시쓰기
+    with open('all_headline.txt', 'w', encoding='utf-8') as outfile:
+        outfile.writelines(unique_lines)      
+        print(f"중복제거 complete.. 총 headline count: {len(unique_lines)}")
+
+
 
 def open_notepad(filename=f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
     subprocess.run(["notepad.exe", filename], check=True)
 
 
-# 헤드라인 및 아티클 가져오기
-contents = get_naver_news_content()
 
-# 가져온 내용을 텍스트 파일에 저장
-save_to_text(contents)
 
-# 저장된 내용을 메모장으로 열기
-open_notepad()
+if __name__ == "__main__":
+    # 헤드라인 및 아티클 가져오기
+    contents = get_naver_news_content()
+
+    # 가져온 내용을 텍스트 파일에 저장
+    save_to_text(contents)
+
+    # 저장된 내용을 메모장으로 열기
+    open_notepad()

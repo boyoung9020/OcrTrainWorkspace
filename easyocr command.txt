@@ -1,22 +1,22 @@
 랜덤 이미지 생성
-trdg -l ko -c 1000 -w 5 --output_dir "C:\Users\karuj\Desktop\EasyocrWorkspace\step1\training"
-trdg -l ko -c 100 -w 5 --output_dir "C:\Users\karuj\Desktop\EasyocrWorkspace\step1\validation"
-trdg -l ko -c 100 -w 5 --output_dir "C:\Users\karuj\Desktop\EasyocrWorkspace\step1\test"
+trdg -l ko -c 1000 -w 5 --output_dir "C:\Users\karuj\Desktop\OcrTrainWorkspace\step1\training"
+trdg -l ko -c 100 -w 5 --output_dir "C:\Users\karuj\Desktop\OcrTrainWorkspace\step1\validation"
+trdg -l ko -c 100 -w 5 --output_dir "C:\Users\karuj\Desktop\OcrTrainWorkspace\step1\test"
 
 
 
 
 
 이미지를 텍스트로
-python convert.py --input_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step1\training" --output_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\training\kordata"
+python convert.py --input_path "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step1\training" --output_path "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\training\kordata"
 
-python convert.py --input_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step1\validation" --output_path "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\validation\kordata"
+python convert.py --input_path "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step1\validation" --output_path "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\validation\kordata"
 
 
 lmdb생성
-python create_lmdb_dataset.py --inputPath "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\training\kordata" --gtFile "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\training\kordata\gt.txt" --outputPath "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training\kordata"
+python create_lmdb_dataset.py --inputPath "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\training\kordata" --gtFile "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\training\kordata\gt.txt" --outputPath "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\training\kordata"
 
-python create_lmdb_dataset.py --inputPath "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\validation\kordata" --gtFile "C:\Users\gemiso\Desktop\EasyocrWorkspace\step2\validation\kordata\gt.txt" --outputPath "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation\kordata"
+python create_lmdb_dataset.py --inputPath "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\validation\kordata" --gtFile "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step2\validation\kordata\gt.txt" --outputPath "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\validation\kordata"
 
 
 pretrained_model 테스트
@@ -29,7 +29,7 @@ python demo.py --Transformation TPS --FeatureExtraction ResNet --SequenceModelin
 학습
 NONE-VGG-BILSTM-CTC
 
-python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --workers 0 --select_data /  --batch_ratio 1 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --saved_model "C:\Users\gemiso\Desktop\EasyocrWorkspace\deep-text-recognition-benchmark\models\None-VGG-BiLSTM-CTC.pth" --FT
+python train.py --train_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --saved_model "C:\Users\gemiso\Desktop\OcrTrainWorkspace\deep-text-recognition-benchmark\models\current_accuaracy.pth" --FT
 
 
 
@@ -37,13 +37,13 @@ python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\tra
 
 NONE-VGG-BILSTM-CTC
 
-python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
+python train.py --train_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
 
 
 TPS-RESNET-BILSTM-ATTN
 
 #######################
-python train.py --train_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\EasyocrWorkspace\step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
+python train.py --train_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\training" --valid_data "C:\Users\gemiso\Desktop\OcrTrainWorkspace\step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
 #######################
 
 
