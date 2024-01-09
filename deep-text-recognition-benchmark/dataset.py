@@ -139,22 +139,14 @@ class LmdbDataset(Dataset):
             sys.exit(0)
 
         with self.env.begin(write=False) as txn:
-            nSamples = int(txn.get('num-samples'.encode()))
-            self.nSamples = nSamples
+            nSamples_raw = txn.get('num-samples'.encode())
+            self.nSamples = int(nSamples_raw) if nSamples_raw is not None else 0
 
             if self.opt.data_filtering_off:
                 # for fast check or benchmark evaluation with no filtering
                 self.filtered_index_list = [index + 1 for index in range(self.nSamples)]
             else:
-                """ Filtering part
-                If you want to evaluate IC15-2077 & CUTE datasets which have special character labels,
-                use --data_filtering_off and only evaluate on alphabets and digits.
-                see https://github.com/clovaai/deep-text-recognition-benchmark/blob/6593928855fb7abb999a99f428b3e4477d4ae356/dataset.py#L190-L192
-
-                And if you want to evaluate them with the model trained with --sensitive option,
-                use --sensitive and --data_filtering_off,
-                see https://github.com/clovaai/deep-text-recognition-benchmark/blob/dff844874dbe9e0ec8c5a52a7bd08c7f20afe704/test.py#L137-L144
-                """
+                # Filtering part
                 self.filtered_index_list = []
                 for index in range(self.nSamples):
                     index += 1  # lmdb starts with 1
@@ -215,6 +207,18 @@ class LmdbDataset(Dataset):
             label = re.sub(out_of_char, '', label)
 
         return (img, label)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['env'] = None  # Clear the LMDB environment before pickling
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.env = lmdb.open(self.root, max_readers=32, readonly=True, lock=False, readahead=False, meminit=False)
+        if not self.env:
+            print('cannot create lmdb from %s' % (self.root))
+            sys.exit(0)
 
 
 class RawDataset(Dataset):

@@ -14,6 +14,7 @@ import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data
 import numpy as np
+import multiprocessing
 
 from datetime import datetime
 from utils import CTCLabelConverter, CTCLabelConverterForBaiduWarpctc, AttnLabelConverter, Averager
@@ -31,7 +32,7 @@ def train(opt):
     print('-' * 80)
     print(f'{backupdir}+백업폴더 생성 완료')
 
-
+    torch.cuda.set_per_process_memory_fraction(0.9)  # 예시로 90%의 GPU 메모리만 사용하도록 설정
 
     """ 데이터셋 준비 """
     if not opt.data_filtering_off:
@@ -242,6 +243,8 @@ def train(opt):
         if (iteration + 1) % 1e+5 == 0:
             torch.save(
                 model.state_dict(), f'./saved_models/{backupdir}/iter_{iteration+1}.pth')
+            
+        torch.cuda.empty_cache()
 
         if (iteration + 1) == opt.num_iter:
             print('end the training')
@@ -252,17 +255,19 @@ character = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`
 
 
 if __name__ == '__main__':
+    multiprocessing.set_start_method('spawn')
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', help='Where to store logs and models')
     parser.add_argument('--train_data', required=True, help='path to training dataset')
     parser.add_argument('--valid_data', required=True, help='path to validation dataset')
     parser.add_argument('--manualSeed', type=int, default=1111, help='for random seed setting')
     #건들
-    parser.add_argument('--workers', type=int, help='number of data loading workers', default=0)
-    parser.add_argument('--batch_size', type=int, default=32, help='input batch size')
-    parser.add_argument('--num_iter', type=int, default=1000000, help='number of iterations to train for')
+    parser.add_argument('--workers', type=int, help='number of data loading workers', default=4)
+    parser.add_argument('--batch_size', type=int, default=16, help='input batch size')
+    parser.add_argument('--num_iter', type=int, default=10000, help='number of iterations to train for')
     #건들
-    parser.add_argument('--valInterval', type=int, default=1000, help='Interval between each validation')
+    parser.add_argument('--valInterval', type=int, default=300, help='Interval between each validation')
     parser.add_argument('--saved_model', default='', help="path to model to continue training")
     parser.add_argument('--FT', action='store_true', help='whether to do fine-tuning')
     parser.add_argument('--adam', action='store_true', help='Whether to use adam (default is Adadelta)')
