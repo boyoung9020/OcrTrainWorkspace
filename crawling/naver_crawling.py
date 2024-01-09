@@ -16,7 +16,8 @@ options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
 backup_time = datetime.now()
 backupdir = f'{backup_time.strftime("%y%m%d_%H%M")}'
-os.makedirs(f'./headline_crawling_backup/{backupdir}')
+os.makedirs(os.path.join(os.getcwd(), f'headline_crawling_backup/{backupdir}'))
+
 print(f'{backupdir}백업폴더 생성 완료')
 
 
@@ -33,7 +34,7 @@ def clean_title(title):
 # 세계       104       100페이지    97  
 # IT/과학    105       80페이지     70
 
-category = {100: 2, 101: 4, 102: 6, 103: 9, 104: 1, 105: 9}
+category = {100: 200, 101: 400, 102: 600, 103: 90, 104: 100, 105: 90}
 
 def get_naver_news_content(start_page=1):
     all_contents = []  # 각 카테고리의 결과를 모아서 반환할 리스트
@@ -91,7 +92,7 @@ def get_naver_news_content(start_page=1):
 
     return all_contents  # 최종적으로 전체 결과 반환
 
-def save_to_text(all_contents, filename=f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
+def save_to_text(all_contents, filename = f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
     # 백업용
     with open(filename, "w", encoding="utf-8") as file:
         for content in all_contents:
