@@ -1,9 +1,56 @@
-# ocrTrain
-deep-text-recognition-benchmark를 이용한 OCR 사용자모델 학습
+# OcrTrain
 
-dependency : torch, lmdb, torchvision, nltk, natsort, pillow, requests, opencv-python, tqdm, fire (use `pip install [library]` command)
+News Headline 문자인식을 위한 OcrEngine 사용자모델 학습.
 
-# 1. 학습 데이터 생성
+학습은 pytorch를 기반으로한 clovaai의 deep-text-recognition-benchmark으로 학습합니다.
+
+현재 학습 진행중이라 수시로 readme가 바뀔수 있습니다.
+
+<br>
+
+## Getting Started 
+
+본 프로젝트는 ViusalStudioCode와 Python언어로 Anaconda 가상환경에서 진행되었습니다.
+
+학습단계 command는 윈도우 명령 프롬프트에서 진행됩니다.
+
+<br>
+
+### Prerequisites 
+
+학습의 GPU 사용을 위해 CUDA의 설치가 필요합니다. 
+
+이 프로젝트에서는 다음버전을 설치했지만 최신버전으로 사용하셔도 무방합니다.
+
+```
+CUDA == 11.8
+cuDnn == 8.9.7
+```
+<br>
+
+또한 원활한 진행을 위해 Anaconda를 설치하여 가상환경에서 진행합니다.
+
+<br>
+
+### Installing 
+
+AnaConda 가상환경에 requirments.txt를 한번에 설치하시거나 참고하셔서 conda나 pip으로 설치하시면 됩니다.
+
+```
+$ pip install -r requirements.txt
+```
+
+```
+$ conda/pip install [module_name]
+```
+
+<br>
+<br>
+<br>
+
+# 프로젝트 개요
+
+## 1. 학습 데이터 생성
 
 ### naver_crawling.py
 * 네이버 뉴스종합 홈에서 정치/경제/사회/생활/문화/IT/과학/세계 category의 headline을 페이지끝까지 crawling해 필요없는 특수문자들을 걸러서 종합한다.
@@ -20,7 +67,7 @@ dependency : torch, lmdb, torchvision, nltk, natsort, pillow, requests, opencv-p
 <br>
 <br>
 
-# 2. 가져온 healine을 공백 기준 단어로 잘라 데이터화
+## 2. 가져온 healine을 공백 기준 단어로 잘라 데이터화
  * 학습단어 약 100만개 생성
 
 ### images/ 속 .jpg 이미지들을 생성, gt.txt파일에 이미지 path와 headline 텍스트로 key/value값을 작성후 저장
@@ -33,7 +80,7 @@ dependency : torch, lmdb, torchvision, nltk, natsort, pillow, requests, opencv-p
 <br>
 <br>
 
-# 3. lmdb 포맷으로 데이터셋 생성
+## 3. lmdb 포맷으로 데이터셋 생성
 
 
 ### deep-text-recognition-benchmark의 create_lmdb_dataset.py 모듈로 lmdb셋 생성
@@ -72,7 +119,7 @@ $ python create_lmdb_dataset.py
 
 <br>
 
-# 4. 사용자 모델 학습(training)
+## 4. 사용자 모델 학습(training)
 여기서부턴 gpu 환경에서만 가능하다.
 
 ### NONE-VGG-BILSTM-CTC Scartch 학습
@@ -84,7 +131,7 @@ $ python train.py
 --valid_data ".\OcrTrainWorkspace\step3\validation"
 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
 ```
-<br>
+
 
 ### NONE-VGG-BILSTM-CTC FT 학습
 
@@ -96,7 +143,7 @@ $ python train.py
 --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC"
 --saved_model ".\OcrTrainWorkspace\deep-text-recognition-benchmark\models\None-VGG-BiLSTM-CTC.pth" --FT
 ```
-<br>
+
 
 ### TPS-RESNET-BILSTM-ATTN Scartch 학습
 
@@ -107,7 +154,7 @@ $ python train.py
 --valid_data ".\OcrTrainWorkspace\step3\validation"
 --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
 ```
-<br>
+
 
 ### TPS-RESNET-BILSTM-ATTN FT 학습
 
@@ -121,7 +168,7 @@ $ python train.py
 .pth" --FT
 
 ```
-<br>
+
 
 ### 학습 옵션
 train.py의 옵션을 커스텀해 학습 가능하다.
@@ -144,7 +191,7 @@ train.py의 옵션을 커스텀해 학습 가능하다.
 
 ### 학습 모습
 
-<img src="https://github.com/boyoung9020/OcrTrainWorkspace/assets/154112385/8a01396c-df4e-4359-bcfe-4ef49831394c" width="500" height="400"/>
+<img src="https://github.com/boyoung9020/OcrTrainWorkspace/assets/154112385/8a01396c-df4e-4359-bcfe-4ef49831394c" width="600" height="400"/>
 
 <br>
 
@@ -155,7 +202,7 @@ train.py의 옵션을 커스텀해 학습 가능하다.
 
 <br>
 
-# 5. 사용자 모델 테스트(demo.py)
+## 5. 사용자 모델 테스트(demo.py)
 
 - 본 학습의 목표는 headline인식 이기에 EasyOcr에 있는 CRAFT가 중요하지 않을것 같아 demo.py으로 테스트를 먼저 진행한다.  
   
@@ -168,7 +215,7 @@ $ python demo.py
 --saved_model ./models/current_accuaracy.pth
 ```
 
-- 
+테스트결과는 추후 인식률이 높아지면 첨부
   
 
 <br>
@@ -176,5 +223,24 @@ $ python demo.py
 
 
 
-# Acknowledgements
-[deep-text-recognition-benchmark](https://github.com/clovaai/deep-text-recognition-benchmark) , [TextRecognitionDataGenerator](https://github.com/Belval/TextRecognitionDataGenerator)
+
+
+
+## Deployment / 배포
+
+
+## Built With / 누구랑 만들었나요?
+
+* [BoYoungJung](https://github.com/boyoung9020)
+
+
+
+## Acknowledgments / 감사의 말
+
+* [deep-text-recognition-benchmark](https://github.com/clovaai/deep-text-recognition-benchmark) 
+
+
+
+
+
+
