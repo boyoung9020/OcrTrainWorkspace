@@ -48,7 +48,7 @@ $ conda/pip install [module_name]
 <br>
 <br>
 
-# 프로젝트 개요
+# Running the train
 
 ## 1. 학습 데이터 생성
 
@@ -228,12 +228,13 @@ $ python demo.py
 
 ## Deployment / 배포
 
+<br>
 
 ## Built With / 누구랑 만들었나요?
 
 * [BoYoungJung](https://github.com/boyoung9020)
 
-
+<br>
 
 ## Acknowledgments / 감사의 말
 
