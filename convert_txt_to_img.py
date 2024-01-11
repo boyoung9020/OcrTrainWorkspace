@@ -137,12 +137,12 @@ def main() :
         counter = 0
         for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
             line = line.strip()
-            if len(line) <26 :
+            if len(line) <22 :
                 image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
                 for image_path, label in zip(image_paths, labels):
                     gt_file.write(f"{image_path}\t{label}\n")
                 counter += 1
-
+                
 
     ####### validation데이터셋 생성
     with open(validation_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(validation_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
@@ -153,7 +153,7 @@ def main() :
         counter = 0
         for line in tqdm( lines, desc="validation데이터셋 생성 진행 중"):
             line = line.strip()
-            if len(line) <32 :
+            if len(line) <22 :
                 image_paths, labels = create_text_images(line, font_path, validation_output_path, counter)
                 for image_path, label in zip(image_paths, labels):
                     gt_file.write(f"{image_path}\t{label}\n")
@@ -169,7 +169,7 @@ def main() :
         counter = 0
         for line in tqdm( lines, desc="test데이터셋 생성 진행 중"):
             line = line.strip()
-            if len(line) <25 :
+            if len(line) <22 :
                 image_paths, labels = create_text_images(line, font_path, test_output_path, counter)
                 for image_path, label in zip(image_paths, labels):
                     gt_file.write(f"{image_path}\t{label}\n")

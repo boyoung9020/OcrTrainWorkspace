@@ -16,7 +16,10 @@ options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
 backup_time = datetime.now()
 backupdir = f'{backup_time.strftime("%y%m%d_%H%M")}'
-os.makedirs(os.path.join(os.getcwd(), f'headline_crawling_backup/{backupdir}'))
+os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), f'headline_crawling_backup/{backupdir}'))
+backupfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'headline_crawling_backup/{backupdir}/{backupdir}.txt')
+all_headline = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'all_headline.txt')
+
 
 print(f'{backupdir}백업폴더 생성 완료')
 
@@ -92,30 +95,31 @@ def get_naver_news_content(start_page=1):
 
     return all_contents  # 최종적으로 전체 결과 반환
 
-def save_to_text(all_contents, filename = f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
+def save_to_text(all_contents):
+    
     # 백업용
-    with open(filename, "w", encoding="utf-8") as file:
+    with open(backupfile, "w", encoding="utf-8") as file:
         for content in all_contents:
             file.write(f"{content['title']}\n")
     # 전체저장
-    with open('all_headline.txt', 'a', encoding='utf-8') as file:
+    with open(all_headline, 'a', encoding='utf-8') as file:
         for content in all_contents:
             file.write(f"{content['title']}\n")
         
     # 중복제거
-    with open('all_headline.txt', 'r', encoding='utf-8') as infile:
+    with open(all_headline, 'r', encoding='utf-8') as infile:
         lines = infile.readlines()
 
     unique_lines = list(set(lines))
     # 다시쓰기
-    with open('all_headline.txt', 'w', encoding='utf-8') as outfile:
+    with open(all_headline, 'w', encoding='utf-8') as outfile:
         outfile.writelines(unique_lines)      
         print(f"중복제거 complete.. 총 headline count: {len(unique_lines)}")
 
 
 
-def open_notepad(filename=f"./headline_crawling_backup/{backupdir}/{backupdir}.txt"):
-    subprocess.run(["notepad.exe", filename], check=True)
+def open_notepad(all_headline):
+    subprocess.run(["notepad.exe", all_headline], check=True)
 
 
 
@@ -128,4 +132,4 @@ if __name__ == "__main__":
     save_to_text(contents)
 
     # 저장된 내용을 메모장으로 열기
-    open_notepad()
+    open_notepad(all_headline)
