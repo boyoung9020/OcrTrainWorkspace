@@ -5,6 +5,9 @@ from tqdm import tqdm
 import random
 from itertools import islice
 import warnings
+from concurrent.futures import ProcessPoolExecutor
+
+
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -13,30 +16,27 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 #     return re.sub(r'[\\/:*?"<>|]', '_', text)
 
 
-def create_text_images(words, font_path, save_output_path, counter):
-    
-    target_height_ratio = 0.98  # 이미지 배경 크기의 90%
+
+def create_text_images(args):
+    line, font_path, save_output_path, counter = args
+
+    target_height_ratio = 0.98
     width = 1625
-    height = 120  # 텍스트 높이 설정
+    height = 120
     image_size = (width, height)
-    font_size = 90  # 최대 폰트 크기
+    font_size = 90
 
-    image_paths = []  # 각 단어 이미지의 경로를 저장할 리스트
-    labels = []  # 각 단어 이미지의 라벨을 저장할 리스트
+    image_paths = []
+    labels = []
 
-    # 배경을 흰색(255)으로 하는 이미지 생성
-    img = Image.new('L', (width, height), color=238)  # 'L' 모드는 8비트 흑백 이미지를 의미
+    img = Image.new('L', (width, height), color=238)
     draw = ImageDraw.Draw(img)
-
     font = ImageFont.truetype(font_path, size=font_size)
 
-    # 특정 문자 제외한 문자열 생성
-    filtered_words = ''.join(char for char in words if char not in '!#$()*/:;<>=?@[]^{/}|~')
-
-    # 텍스트의 너비 계산
+    filtered_words = ''.join(char for char in line if char not in '!#$()*/:;<>=?@[]^{/}|~')
     text_width, text_height = draw.textsize(filtered_words, font)
-    x_position = ((image_size[0] - text_width) // 2) + 80  # 가로 중앙 정렬
-    y_position = ((image_size[1] - text_height) // 2) - 11  # 세로 중앙 정렬
+    x_position = ((image_size[0] - text_width) // 2) + 80
+    y_position = ((image_size[1] - text_height) // 2) - 11
 
     character_spacing = -7
     current_x_position = x_position
@@ -48,13 +48,13 @@ def create_text_images(words, font_path, save_output_path, counter):
 
     img = img.resize((1625, 120), Image.ANTIALIAS)
 
-    # 이미지 저장
     output_path = os.path.join(save_output_path, f"images\image_{counter:04d}.jpg")
     img.save(output_path)
     image_paths.append(output_path.replace(os.path.join(save_output_path, ''), ''))
     labels.append(filtered_words)
 
     return image_paths, labels
+    
     
 
 def delete_files_in_directory(directory):
@@ -117,18 +117,19 @@ def split_and_save(text_file_path, split_text_file_path):
 
 ###### training데이터셋 생성
 def create_training_dataset():
+    print(f"{training_split_text_file_path} 읽는중.....")
     with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
         lines = file.readlines()
         counter = 0
-        for line in tqdm(lines, desc="training데이터셋 생성 진행 중"):
-            line = line.strip()
-            if len(line) <26 :
-                image_paths, labels = create_text_images(line, font_path, training_output_path, counter)
-                for image_path, label in zip(image_paths, labels):
-                    gt_file.write(f"{image_path}\t{label}\n")
-                counter += 1
-    print(f"training 데이터셋이 {count_images_in_directory(training_output_path)}개 생성되었습니다.")
+        args_list = [(line.strip(), font_path, training_output_path, counter) for line in lines if len(line.strip()) < 26]
+        print("이미지 생성 들어감")
+        with ProcessPoolExecutor() as executor:
+            results = list(tqdm(executor.map(create_text_images, args_list), total=len(args_list), desc="training데이터셋 생성 진행 중"))
 
+        for result in results:
+            for image_path, label in zip(result[0], result[1]):
+                gt_file.write(f"{image_path}\t{label}\n")
+            counter += 1
 
 ####### validation데이터셋 생성
 def create_validation_dataset():
@@ -176,21 +177,7 @@ if __name__ == '__main__':
     # delete_files_in_directory(test_output_path)
     split_and_save(training_text_file_path, training_split_text_file_path)
     # split_and_save(validation_text_file_path, validation_split_text_file_path)
-    create_training_dataset(training_split_text_file_path, font_path, training_output_path)
+    create_training_dataset()
     # create_validation_dataset()
     # create_test_dataset()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

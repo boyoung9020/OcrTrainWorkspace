@@ -70,11 +70,13 @@ def crawl_category(category_info, position):
 
 def get_all_contents():
     all_contents = []
+    positions = list(range(len(category)))
+    
     with Pool() as pool:
-        positions = list(range(len(category)))
-        results = pool.map(partial(crawl_category, position=positions.pop(0)), category.items())
+        results = pool.starmap(crawl_category, zip(category.items(), positions))
         for contents in results:
             all_contents.extend(contents)
+            
     return all_contents
 
 def save_to_text(all_contents, backupfile, all_headline):
