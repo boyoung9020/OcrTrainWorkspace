@@ -15,7 +15,7 @@ def create_text_images(args):
         width = 1625
         height = 120
         image_size = (width, height)
-        font_size = 90
+        font_size = 80
 
         image_paths = []
         labels = []
@@ -26,8 +26,8 @@ def create_text_images(args):
 
         filtered_words = ''.join(char for char in line if char not in '!#$()*/:;<>=?@[]^{/}|~')
         text_width, text_height = draw.textsize(filtered_words, font)
-        x_position = ((image_size[0] - text_width) // 2) 
-        y_position = ((image_size[1] - text_height) // 2) - 11
+        x_position = ((image_size[0] - text_width) // 2)  + 60
+        y_position = ((image_size[1] - text_height) // 2) + 40
 
         character_spacing = -7
         current_x_position = x_position
@@ -95,7 +95,8 @@ def create_training_dataset():
             for result in results:
                 image_paths_str = ', '.join(result[0])  # 쉼표로 구분된 문자열로 변환
                 gt_file.write(f"{image_paths_str}\t{result[1]}")
-                
+    print('-' * 80)
+            
 
 ########### validation dataset 생성             
 def create_validation_dataset():
@@ -113,7 +114,8 @@ def create_validation_dataset():
             for result in results:
                 image_paths_str = ', '.join(result[0])  # 쉼표로 구분된 문자열로 변환
                 gt_file.write(f"{image_paths_str}\t{result[1]}")
-                             
+    print('-' * 80)
+                         
 
 ########### test dataset 생성             
 def create_test_dataset():
@@ -123,13 +125,14 @@ def create_test_dataset():
     delete_files_in_directory(test_output_path)
     
     with open(test_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(test_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
-        
+        filtered_lines = [line for line in lines if len(line) <= 20]
         with ProcessPoolExecutor() as executor:
-            results = list(tqdm(executor.map(create_text_images, [(line, font_path, test_output_path, counter) for counter, line in enumerate(lines, start=1)], chunksize=50), total=len(lines), desc='Creating Training Data', unit='image'))
+            results = list(tqdm(executor.map(create_text_images, [(filtered_lines, font_path, test_output_path, counter) for counter, filtered_lines in enumerate(filtered_lines, start=1) ], chunksize=50), total=len(filtered_lines), desc='Creating Training Data', unit='image'))
             
             for result in results:
                 image_paths_str = ', '.join(result[0])  # 쉼표로 구분된 문자열로 변환
                 gt_file.write(f"{image_paths_str}\t{result[1]}")
+    print('-' * 80)
 
                 
 script_directory = os.path.dirname(__file__)
@@ -161,8 +164,9 @@ if not os.path.exists(images_folder_path):
 
 
 if __name__ == "__main__":
-    #split_and_save(training_text_file_path, training_split_text_file_path)
-    #split_and_save(validation_text_file_path, validation_split_text_file_path)
-    create_training_dataset()
-    create_validation_dataset()
+    # split_and_save(training_text_file_path, training_split_text_file_path)
+    # split_and_save(validation_text_file_path, validation_split_text_file_path)
+    # split_and_save(test_text_file_path, test_split_text_file_path)
+    # create_training_datasedt()
+    # create_validation_dataset()
     create_test_dataset()

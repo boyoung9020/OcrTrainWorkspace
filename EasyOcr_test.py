@@ -35,13 +35,12 @@ if __name__ == '__main__':
 
     for file in sorted_files:
         filename = os.path.basename(file)
-
-        # Output the filename only once for each image
-        print(f"\nfilename: '{filename}'")
-
         result = reader.readtext(file)
 
         # Concatenate all recognized strings for the image
         concatenated_string = ' '.join([string for (bbox, string, confidence) in result])
-        
-        print("Recognized Text:", concatenated_string)
+        confidence_score = ''.join([str(confidence) for (bbox, string, confidence) in result])
+
+        # Output the filename only once for each image
+
+        print(f"filename: '{filename}' ==  '{concatenated_string}' == '{confidence_score}'" )

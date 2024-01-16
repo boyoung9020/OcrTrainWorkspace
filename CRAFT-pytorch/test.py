@@ -45,8 +45,8 @@ def str2bool(v):
 parser = argparse.ArgumentParser(description='CRAFT Text Detection')
 parser.add_argument('--trained_model', default='weights/craft_mlt_25k.pth', type=str, help='pretrained model')
 parser.add_argument('--text_threshold', default=0.7, type=float, help='text confidence threshold')
-parser.add_argument('--low_text', default=0.4, type=float, help='text low-bound score')
-parser.add_argument('--link_threshold', default=0.4, type=float, help='link confidence threshold')
+parser.add_argument('--low_text', default=0.3, type=float, help='text low-bound score')
+parser.add_argument('--link_threshold', default=0.9, type=float, help='link confidence threshold') ## 더 split 미세하게 자르기
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda for inference')
 parser.add_argument('--canvas_size', default=1280, type=int, help='image size for inference')
 parser.add_argument('--mag_ratio', default=1.5, type=float, help='image magnification ratio')
@@ -168,4 +168,57 @@ if __name__ == '__main__':
 
         file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
 
+##########################################
+    result_folder = r'C:\Users\gemiso\Desktop\OcrTrainWorkspace\CRAFT-pytorch\result2'
+    if not os.path.isdir(result_folder):
+        os.mkdir(result_folder)
+
+    target_size = (1625, 120)
+    background_color = (238, 238, 238)
+
+    for k, image_path in enumerate(image_list):
+        print("테스트 이미지 {:d}/{:d}: {:s}".format(k+1, len(image_list), image_path), end='\r')
+        image = imgproc.loadImage(image_path)
+
+        bboxes, polys, score_text = test_net(net, image, args.text_threshold, args.link_threshold, args.low_text, args.cuda, args.poly, refine_net)
+        
+        # 각 단어의 정보를 저장할 리스트 초기화
+        word_info_list = []
+
+        # 단어 정보 저장
+        for i, box in enumerate(polys if args.poly else bboxes):
+            # 좌표 값을 정수로 변환
+            box = [int(val) for val in box.flatten()]
+
+            # 단어 이미지 자르기
+            word_image = image[box[1]:box[5], box[0]:box[2]].copy()
+
+            # 단어 정보 추가
+            word_info_list.append({
+                'index': i,
+                'box': box,
+                'image': word_image
+            })
+
+        # 각 단어의 x축 값 기준으로 정렬
+        sorted_word_info = sorted(word_info_list, key=lambda x: x['box'][0])
+
+        # 정렬된 단어 이미지를 순차적으로 저장
+        for i, word_info in enumerate(sorted_word_info):
+            box = word_info['box']
+            word_image = word_info['image']
+
+            # 새로운 결과 이미지 생성
+            result_image = np.ones((target_size[1], target_size[0], 3), dtype=np.uint8) * background_color
+
+            # 삽입 위치 계산
+            x_offset = (target_size[0] - word_image.shape[1]) // 2
+            y_offset = (target_size[1] - word_image.shape[0]) // 2
+
+            # 중앙에 이미지 삽입
+            result_image[y_offset:y_offset+word_image.shape[0], x_offset:x_offset+word_image.shape[1]] = word_image
+
+            # 결과 이미지 저장
+            result_filename = os.path.join(result_folder, f"word_{k}_{i}.jpg")
+            cv2.imwrite(result_filename, result_image)
     print("elapsed time : {}s".format(time.time() - t))

@@ -1,42 +1,42 @@
 랜덤 이미지 생성
-trdg -l ko -c 1000 -w 5 --output_dir "..\step1\training"
-trdg -l ko -c 100 -w 5 --output_dir "..\step1\validation"
-trdg -l ko -c 100 -w 5 --output_dir "..\step1\test"
+trdg -l ko -c 1000 -w 5 --output_dir ".\step1\training"
+trdg -l ko -c 100 -w 5 --output_dir ".\step1\validation"
+trdg -l ko -c 100 -w 5 --output_dir ".\step1\test"
 
 이미지를 텍스트로
-python convert.py --input_path "..\step1\training" --output_path "..\step2\training\kordata"
-python convert.py --input_path "..\step1\validation" --output_path "..\step2\validation\kordata"
+python convert.py --input_path ".\step1\training" --output_path ".\step2\training\kordata"
+python convert.py --input_path ".\step1\validation" --output_path ".\step2\validation\kordata"
 
 lmdb생성
-python create_lmdb_dataset.py --inputPath "..\step2\training\kordata" --gtFile "..\step2\training\kordata\gt.txt" --outputPath "..\step3\training\kordata"
+python deep-text-recognition-benchmark\create_lmdb_dataset.py --inputPath "step2\training\kordata" --gtFile "step2\training\kordata\gt.txt" --outputPath "step3\training\kordata"
 
-python create_lmdb_dataset.py --inputPath "..\step2\validation\kordata" --gtFile "..\step2\validation\kordata\gt.txt" --outputPath "..\step3\validation\kordata"
+python deep-text-recognition-benchmark\create_lmdb_dataset.py --inputPath "step2\validation\kordata" --gtFile "step2\validation\kordata\gt.txt" --outputPath "step3\validation\kordata"
 
 pretrained_model 테스트
-python demo.py --Transformation None --FeatureExtraction VGG --SequenceModeling BiLSTM --Prediction CTC --image_folder demo_image/ --saved_model ./models/current_accuaracy.pth
+python deep-text-recognition-benchmark\demo.py --Transformation None --FeatureExtraction VGG --SequenceModeling BiLSTM --Prediction CTC --image_folder .\deep-text-recognition-benchmark\demo_image\ --saved_model .\deep-text-recognition-benchmark\models\current_accuaracy.pth
 
-python demo.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image/ --saved_model ./models/TPS-ResNet-BiLSTM-Attn.pth --sensitive
+python deep-text-recognition-benchmark\demo.py --Transformation TPS --FeatureExtraction ResNet --SequenceModeling BiLSTM --Prediction Attn --image_folder demo_image\ --saved_model .\models\TPS-ResNet-BiLSTM-Attn.pth --sensitive
 
 학습
 NONE-VGG-BILSTM-CTC
 
-python train.py --train_data "..\step3\training" --valid_data "..\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --saved_model "..\deep-text-recognition-benchmark\models\korean_g2.pth" --FT
+python deep-text-recognition-benchmark\train.py --train_data "step3\training" --valid_data "step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" --saved_model "deep-text-recognition-benchmark\models\korean_g2.pth" --FT
 
 -----------------------------------SCRACTH
 
 NONE-VGG-BILSTM-CTC
 
-python train.py --train_data "..\step3\training" --valid_data "..\step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
+python deep-text-recognition-benchmark\train.py --train_data "step3\training" --valid_data "step3\validation" --Transformation None --FeatureExtraction "VGG" --SequenceModeling "BiLSTM" --Prediction "CTC" 
 
 TPS-RESNET-BILSTM-ATTN
 
 #######################
-python train.py --train_data "..\step3\training" --valid_data "..\step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
+python deep-text-recognition-benchmark\train.py --train_data "step3\training" --valid_data "step3\validation" --Transformation "TPS" --FeatureExtraction "ResNet" --SequenceModeling "BiLSTM" --Prediction "Attn"
 #######################
 
 CRAFT
 
-python test.py --trained_model=model/craft_mlt_25k.pth --test_folder=sample
+python CRAFT-pytorch/test.py --trained_model=CRAFT-pytorch/model/craft_mlt_25k.pth --test_folder=../deep-text-recognition-benchmark/demo_image
 
 
 
