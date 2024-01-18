@@ -3,7 +3,11 @@ import os
 import lmdb
 import cv2
 import numpy as np
-from pathlib import Path  # pathlib 추가
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
+from PIL import Image
+import time
 
 def checkImageIsValid(imageBin):
     if imageBin is None:
@@ -11,29 +15,19 @@ def checkImageIsValid(imageBin):
     imageBuf = np.frombuffer(imageBin, dtype=np.uint8)
     img = cv2.imdecode(imageBuf, cv2.IMREAD_GRAYSCALE)
     imgH, imgW = img.shape[0], img.shape[1]
-    if imgH * imgW == 0:
-        return False
-    return True
+    return imgH * imgW != 0
 
-def writeCache(env, cache):
+def writeCache(args):
+    env, cache = args
     with env.begin(write=True) as txn:
         for k, v in cache.items():
             txn.put(k, v)
 
-def createDataset(inputPath, gtFile, outputPath, checkValid=True):
-    """
-    Create LMDB dataset for training and evaluation.
-    ARGS:
-        inputPath  : input folder path where starts imagePath
-        outputPath : LMDB output path
-        gtFile     : list of image path and label
-        checkValid : if true, check the validity of every image
-    """
+def createDataset(inputPath, gtFile, outputPath, checkValid=True, chunksize=1000):
     os.makedirs(outputPath, exist_ok=True)
-
-    # Windows에서 유니코드 경로를 처리하기 위해 Path 객체 사용
-
-    env = lmdb.open(outputPath, map_size=10000000000)  # str() 사용하여 경로 문자열로 변환
+    start_time = time.time() 
+    env_path = outputPath  # LMDB path
+    env = lmdb.open(env_path, map_size=10000000000)
     cache = {}
     cnt = 1
 
@@ -41,44 +35,45 @@ def createDataset(inputPath, gtFile, outputPath, checkValid=True):
         datalist = data.readlines()
 
     nSamples = len(datalist)
-    for i in range(nSamples):
-        imagePath, label = datalist[i].strip('\n').split('\t')
-        imagePath = Path(inputPath) / imagePath  # Path 객체 사용
+    with ThreadPoolExecutor(max_workers=4) as executor, tqdm(total=nSamples, ascii=True, desc='Creating LMDB') as pbar:
+        args_list = []
+        for i in range(0, nSamples, chunksize):
+            chunk_data = datalist[i:i + chunksize]
+            args_list = []
+            for j, line in enumerate(chunk_data):
+                imagePath, label = line.strip('\n').split('\t')
+                imagePath = Path(inputPath) / imagePath
 
-        # # only use alphanumeric data
-        # if re.search('[^a-zA-Z0-9]', label):
-        #     continue
+                if not imagePath.exists():
+                    print('%s does not exist' % imagePath)
+                    continue
 
-        if not imagePath.exists():
-            print('%s does not exist' % imagePath)
-            continue
-        with open(imagePath, 'rb') as f:
-            imageBin = f.read()
-        if checkValid:
-            try:
-                if not checkImageIsValid(imageBin):
+                with open(imagePath, 'rb') as f:
+                    imageBin = f.read()
+
+                if checkValid and not checkImageIsValid(imageBin):
                     print('%s is not a valid image' % imagePath)
                     continue
-            except:
-                print('error occurred', i)
-                with open(outputPath / 'error_image_log.txt', 'a', encoding='utf-8') as log:
-                    log.write('%s-th image data occurred error\n' % str(i))
-                continue
 
-        imageKey = 'image-%09d'.encode() % cnt
-        labelKey = 'label-%09d'.encode() % cnt
-        cache[imageKey] = imageBin
-        cache[labelKey] = label.encode()
+                imageKey = f'image-{cnt:09d}'.encode()
+                labelKey = f'label-{cnt:09d}'.encode()
+                cache[imageKey] = imageBin
+                cache[labelKey] = label.encode()
 
-        if cnt % 1000 == 0:
-            writeCache(env, cache)
+                cnt += 1
+
+            executor.submit(writeCache, (env, cache.copy()))  # 각 청크 당 하나의 트랜잭션을 생성하도록 변경
             cache = {}
-            print('Written %d / %d' % (cnt, nSamples))
-        cnt += 1
-    nSamples = cnt-1
+
+            pbar.update(len(chunk_data))
+
+    nSamples = cnt - 1
     cache['num-samples'.encode()] = str(nSamples).encode()
-    writeCache(env, cache)
-    print('Created dataset with %d samples' % nSamples)
+    writeCache((env, cache))
+    print(f'Created dataset with {nSamples} samples')
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print('Total time taken: %.2f seconds' % elapsed_time)
 
 if __name__ == '__main__':
     fire.Fire(createDataset)
