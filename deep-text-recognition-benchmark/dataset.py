@@ -293,8 +293,8 @@ class NormalizePAD(object):
 
 
 class AlignCollate(object):
-
-    def __init__(self, imgH=32, imgW=100, keep_ratio_with_pad=False):
+################ 이미지크기 건들
+    def __init__(self, imgH=120, imgW=1625, keep_ratio_with_pad=False):
         self.imgH = imgH
         self.imgW = imgW
         self.keep_ratio_with_pad = keep_ratio_with_pad
