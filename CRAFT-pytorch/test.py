@@ -181,7 +181,7 @@ if __name__ == '__main__':
             next_bbox = sorted_bboxes[i + 1]
             # print((next_bbox[0][0] - current_bbox[1][0]),(next_bbox[1][0] - current_bbox[0][0]))
 
-            if (next_bbox[0][0] - current_bbox[1][0]) < -8 and (next_bbox[1][0] - current_bbox[0][0]) >160:
+            if (next_bbox[0][0] - current_bbox[1][0]) < -3 and (next_bbox[1][0] - current_bbox[0][0]) <80:
                 # Bounding box가 중첩되지 않으면 current_bbox를 결과에 추가
                 print(f"current{current_bbox},\n next{next_bbox}")
                 print((next_bbox[0][0] - current_bbox[1][0]) , (next_bbox[1][0] - current_bbox[0][0]))
@@ -264,7 +264,7 @@ if __name__ == '__main__':
             next_bbox = sorted_bboxes[i + 1]
             # print((next_bbox[0][0] - current_bbox[1][0]),(next_bbox[1][0] - current_bbox[0][0]))
 
-            if (next_bbox[0][0] - current_bbox[1][0]) < -8 and (next_bbox[1][0] - current_bbox[0][0]) >160:
+            if (next_bbox[0][0] - current_bbox[1][0]) < -3 and (next_bbox[1][0] - current_bbox[0][0]) <80:
                 # Bounding box가 중첩되지 않으면 current_bbox를 결과에 추가
                 print(f"current{current_bbox},\n next{next_bbox}")
                 print((next_bbox[0][0] - current_bbox[1][0]) , (next_bbox[1][0] - current_bbox[0][0]))
