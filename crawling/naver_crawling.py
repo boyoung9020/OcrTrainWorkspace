@@ -8,13 +8,18 @@ from multiprocessing import Pool
 from functools import partial
 import re
 import subprocess
+import logging
 
 options = Options()
 options.add_experimental_option('excludeSwitches', ['enable-logging'])
 options.add_argument('--disable-logging')
-options.add_argument("--headless")
+#options.add_argument("--headless")
 
 driver = webdriver.Chrome(options=options)
+
+log_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log.txt')
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 
 def clean_title(title):
     cleaned_title = re.sub(r'\([^)]*\)', '', title)
@@ -93,6 +98,7 @@ def save_to_text(all_contents, backupfile, all_headline):
     with open(all_headline, 'w', encoding='utf-8') as outfile:
         outfile.writelines(unique_lines)
         print(f"중복제거 complete.. 총 headline count: {len(unique_lines)}")
+        logging.info(f" 총 headline count: {len(unique_lines)}")
 
 def open_notepad(all_headline):
     subprocess.run(["notepad.exe", all_headline], check=True)

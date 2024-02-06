@@ -30,7 +30,6 @@ def demo(opt):
           opt.SequenceModeling, opt.Prediction)
     model = torch.nn.DataParallel(model).to(device)
 
-    # load model
     print('loading pretrained model from %s' % opt.saved_model)
     model.load_state_dict(torch.load(opt.saved_model, map_location=device))
 

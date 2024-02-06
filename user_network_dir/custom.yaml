@@ -1,6 +1,6 @@
 # korean_g2 (None-VGG-BiLSTM-CTC)
 # ref. easyocr.py 219 line 
-imgH: 120
+imgH: 140
 lang_list: ['ko']
 network_params:
   input_channel: 1
