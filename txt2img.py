@@ -17,7 +17,7 @@ def create_text_images(args):
         base_font_size = 80
         font_sizes = list(range(base_font_size - 10, base_font_size + 9))  
         font_size = random.choice(font_sizes)
-        print(font_size)
+        print(f"fs={font_size} {line}")
 
         image_paths = []
         labels = []
@@ -44,9 +44,29 @@ def create_text_images(args):
             char_width, _ = draw.textsize(char, font=font)
             draw.text((current_x_position, y_position), char, font=font, fill="black")
             current_x_position += char_width + character_spacing
-
     
         img = img.crop((50, 0, width , height))
+
+        # 입력 텍스트 길이가 5 이상일 때 회전 각도를 최대 2도로 제한
+        if len(filtered_words) == 1:
+            rotation_angle = 0
+        # 입력 텍스트 길이가 5 이상인 경우 회전 각도를 최대 2도로 제한
+        elif len(filtered_words) >= 5:
+            rotation_angle = random.randint(-2, 2)
+        else:
+            rotation_angle = random.randint(-8, 8)  # 5 미만인 경우 -10도부터 10도 사이에서 랜덤하게 회전
+
+        # 이미지를 회전
+        img = img.rotate(rotation_angle, expand=True, fillcolor=(238, 238, 238))
+
+        # 회전 후 높이가 120이 되도록 자르기
+        img_height = img.size[1]
+        if img_height > height:
+            upper = (img_height - height) // 2
+            lower = upper + height
+            img = img.crop((0, upper, width, lower))
+
+        img = img.crop((0, 0, width -48  , height))
 
         output_path = os.path.join(save_output_path, f"images\image_{counter:04d}.jpg")
         img.save(output_path)
@@ -58,8 +78,6 @@ def create_text_images(args):
     except Exception as e:
         print(f"Exception: {e}")
         raise
-
-
 
 def delete_files_in_directory(directory):
     print(f"{directory} 삭제중...")
