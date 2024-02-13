@@ -24,10 +24,21 @@ def writeCache(args):
             txn.put(k, v)
 
 def createDataset(inputPath, gtFile, outputPath, checkValid=True, chunksize=1000):
+
+    if 'training' in inputPath:
+        path = 'training'
+    elif 'validation' in inputPath:
+        path = 'validation'
+    else:
+        path = 'None'
+    
+
+    print("-" * 40, f"{path} lmdb 생성", "-" * 40)
+
     os.makedirs(outputPath, exist_ok=True)
     start_time = time.time() 
     env_path = outputPath  # LMDB path
-    env = lmdb.open(env_path, map_size=10000000000)
+    env = lmdb.open(env_path, map_size=20000000000)
     cache = {}
     cnt = 1
 
@@ -74,6 +85,7 @@ def createDataset(inputPath, gtFile, outputPath, checkValid=True, chunksize=1000
     end_time = time.time()
     elapsed_time = end_time - start_time
     print('Total time taken: %.2f seconds' % elapsed_time)
+    print('-' * 102)
 
 if __name__ == '__main__':
     fire.Fire(createDataset)

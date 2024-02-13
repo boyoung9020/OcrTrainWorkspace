@@ -7,18 +7,21 @@ import time
 import os
 from datetime import datetime
 import logging
-
-driver = webdriver.Chrome()
+import shutil
 
 
 
 chrome_options = Options()
 chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
 chrome_options.add_argument('--headless')
+logging.getLogger('selenium').setLevel(logging.WARNING)
+driver = webdriver.Chrome(options=chrome_options)
+
 
 category = [100, 101, 102, 103, 104, 105]
 output_file_path = "headlines.txt"
 contents = []  # Change from set to list
+
 
 def get_category_name(key):
     if key == 100:
@@ -41,10 +44,8 @@ def crawl_category(category_info, contents):
     category_name = get_category_name(key)
     url = f"https://news.naver.com/section/{key}"
     driver.get(url)
-
-    for progress_indicator in ["", ".", "..", "..."]:
-        print(f"{category_name} 카테고리 크롤링 중{progress_indicator}", end='\r', flush=True)
-        time.sleep(0.5) 
+    
+    print(f"{category_name} 카테고리 크롤링 중...")
 
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.END)
     count = 0
@@ -58,7 +59,7 @@ def crawl_category(category_info, contents):
             count += 1
 
         except Exception as e:
-            print(f"Exception: {e}")
+            print("더보기 버튼 모두 눌림")
             break
 
     driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.HOME)
@@ -104,7 +105,7 @@ def save_to_text(all_contents, backupfile, all_headline):
         logging.info(f" 총 headline count: {len(unique_lines)}")
 
 def open_notepad(all_headline):
-    os.system(f"notepad.exe {all_headline}")
+    os.system(f"start notepad.exe {all_headline}")
 
 if __name__ == "__main__":
     start_time = time.time()
@@ -114,6 +115,8 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), f'headline_crawling_backup/{backupdir}'))
     backupfile = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'headline_crawling_backup/{backupdir}/{backupdir}.txt')
     all_headline = os.path.join(os.path.dirname(os.path.abspath(__file__)), f'all_headline.txt')
+    target_file_path = os.path.join("headlinedatatxt", "training_all_category.txt")
+
     print(f'{backupdir}백업폴더 생성 완료')
 
     contents = get_all_contents()
@@ -123,3 +126,15 @@ if __name__ == "__main__":
     end_time = time.time()
     elapsed_time = end_time - start_time
     print(f"총 걸린 시간: {elapsed_time:.2f}초")
+
+    while True:
+        user_input = input("training_all_category.txt 업데이트를 하시겠습니까? (y/n): ").strip().lower()
+        if user_input == 'y':
+            shutil.copyfile(all_headline, target_file_path)
+            print("training_all_category 업데이트 완료")
+            break
+        elif user_input == 'n':
+            print("업데이트를 하지 않습니다.")
+            break
+        else:
+            print("잘못된 입력입니다. 다시 입력해주세요.")
