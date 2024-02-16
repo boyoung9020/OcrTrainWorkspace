@@ -46,7 +46,7 @@ def create_text_images(args):
         img = Image.new('RGB', image_size, color=(238, 238, 238))  
         draw = ImageDraw.Draw(img)
 
-        filtered_words = ''.join(char for char in line if char not in '!#$()*/:;<>=?@[]^{/}|~')
+        filtered_words = ''.join(char for char in line if char not in '!#$()*/:;<>=?@[]^{/}|~①②③④⑤⑥⑦⑧⑨')
         x_position = 60  
         y_position = (height - text_height) // 2
 
@@ -86,6 +86,8 @@ def create_text_images(args):
                 rotation_angle = 0
         else:
             rotation_angle = 0
+            img = img.crop((40, 0, width - 28, height))
+
 
         # print(len(filtered_words),rotation_angle)
 
@@ -100,8 +102,10 @@ def create_text_images(args):
         print(f"Exception: {e}")
         raise
 
+import shutil
+
 def delete_files_in_directory(directory):
-    print(f"{directory} 삭제중...")
+    print("-" * 34, f"{directory} 삭제중...", "-" * 34)
     for root, dirs, files in os.walk(directory):
         for filename in files:
             file_path = os.path.join(root, filename)
@@ -110,6 +114,8 @@ def delete_files_in_directory(directory):
                     os.unlink(file_path)
             except Exception as e:
                 print(f"파일 삭제 오류 {file_path}: {e}")
+    print('-' * 102)
+
 
 def count_images_in_directory(output_path):
     print(f"{output_path} count 중.. ")
@@ -155,7 +161,7 @@ def create_training_dataset(args):
     with open(training_split_text_file_path, 'r', encoding='utf-8') as file, open(os.path.join(training_output_path, 'gt.txt'), 'w', encoding='utf-8') as gt_file:
         
         with ProcessPoolExecutor() as executor:
-            results = list(tqdm(executor.map(create_text_images, [(line, font_directory, training_output_path, counter, tilt, full) for counter, line in enumerate(lines, start=1)], chunksize=50), total=len(lines), desc='Creating Training Data', unit='image'))
+            results = list(tqdm(executor.map(create_text_images, [(line, font_directory, training_output_path, counter, tilt, full) for counter, line in enumerate(lines, start=1) ], chunksize=50), total=len(lines), desc='Creating Training Data', unit='image'))
 
             for result in results:
                 image_paths_str = ', '.join(result[0])  # 쉼표로 구분된 문자열로 변환
