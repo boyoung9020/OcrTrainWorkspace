@@ -24,6 +24,7 @@ import imgproc
 import file_utils
 import json
 import zipfile
+import logging
 
 from craft import CRAFT
 
@@ -41,30 +42,6 @@ def copyStateDict(state_dict):
 
 def str2bool(v):
     return v.lower() in ("yes", "y", "true", "t", "1")
-
-parser = argparse.ArgumentParser(description='CRAFT Text Detection')
-parser.add_argument('--trained_model', default='model/craft_mlt_25k.pth', type=str, help='pretrained model')
-parser.add_argument('--text_threshold', default=0.7, type=float, help='text confidence threshold')
-parser.add_argument('--low_text', default=0.3, type=float, help='text low-bound score')## 높을수록 한글자씩 boxing    0.4 아래부터 글자영역 합쳐짐
-parser.add_argument('--link_threshold', default=0.9, type=float, help='link confidence threshold') ## 더 split 미세하게 자르기 
-parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda for inference')
-parser.add_argument('--canvas_size', default=1280, type=int, help='image size for inference')
-parser.add_argument('--mag_ratio', default=1.5, type=float, help='image magnification ratio')## 이미지 확대
-parser.add_argument('--poly', default=False, action='store_true', help='enable polygon type')
-parser.add_argument('--show_time', default=False, action='store_true', help='show processing time')
-parser.add_argument('--test_folder', default='sample/', type=str, help='folder path to input images')
-parser.add_argument('--refine', default=False, action='store_true', help='enable link refiner')
-parser.add_argument('--refiner_model', default='weights/craft_refiner_CTW1500.pth', type=str, help='pretrained refiner model')
-
-args = parser.parse_args()
-
-
-""" For test images in a folder """
-image_list, _, _ = file_utils.get_files(args.test_folder)
-
-result_folder = './result/'
-if not os.path.isdir(result_folder):
-    os.mkdir(result_folder)
 
 def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, refine_net=None):
     t0 = time.time()
@@ -117,12 +94,26 @@ def test_net(net, image, text_threshold, link_threshold, low_text, cuda, poly, r
 
     return boxes, polys, ret_score_text
 
+def expand_image(image, target_height):
+    current_height, width, channels = image.shape
+    if current_height >= target_height:
+        return image
+    
+    # 공백을 추가할 만큼의 크기 계산
+    padding_height = target_height - current_height
+    
+    # 공백을 추가하여 새로운 이미지 생성
+    padding = np.ones((padding_height, width, channels), dtype=np.uint8) * 255  # 흰색 공백
+    expanded_image = np.vstack((image, padding))
+    return expanded_image
 
 
-if __name__ == '__main__':
-    # load net
-    net = CRAFT()     # initialize
-
+def Save_visualization_image(output_visualization_path):
+    output_visualization_path = output_visualization_path
+    args = parse_arguments()
+    net = CRAFT()     
+    target_size = (1625, 120)
+    background_color = (238, 238, 238)
     # print('Loading weights from checkpoint (' + args.trained_model + ')')
     if args.cuda:
         net.load_state_dict(copyStateDict(torch.load(args.trained_model)))
@@ -163,64 +154,217 @@ if __name__ == '__main__':
 
         # save score text
         filename, file_ext = os.path.splitext(os.path.basename(image_path))
-        mask_file = result_folder + "/res_" + filename + '_mask.jpg'
+        mask_file = output_visualization_path + "/res_" + filename + '_mask.jpg'
         cv2.imwrite(mask_file, score_text)
 
-        file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=result_folder)
+        file_utils.saveResult(image_path, image[:,:,::-1], polys, dirname=output_visualization_path)
 
+
+        
     print("elapsed time : {}s".format(time.time() - t))
+    
 
-##########################################
-    result_folder2 = './result2/'
-    if not os.path.isdir(result_folder):
-        os.mkdir(result_folder)
-
+def Save_segmentation_image(output_segmentation_path):
+    output_segmentation_path = output_segmentation_path
+    args = parse_arguments()
+    net = CRAFT()     
     target_size = (1625, 120)
     background_color = (238, 238, 238)
+    # print('Loading weights from checkpoint (' + args.trained_model + ')')
+    if args.cuda:
+        net.load_state_dict(copyStateDict(torch.load(args.trained_model)))
+    else:
+        net.load_state_dict(copyStateDict(torch.load(args.trained_model, map_location='cpu')))
 
+    if args.cuda:
+        net = net.cuda()
+        net = torch.nn.DataParallel(net)
+        cudnn.benchmark = False
+
+    net.eval()
+
+    # LinkRefiner
+    refine_net = None
+    if args.refine:
+        from refinenet import RefineNet
+        refine_net = RefineNet()
+        # print('Loading weights of refiner from checkpoint (' + args.refiner_model + ')')
+        if args.cuda:
+            refine_net.load_state_dict(copyStateDict(torch.load(args.refiner_model)))
+            refine_net = refine_net.cuda()
+            refine_net = torch.nn.DataParallel(refine_net)
+        else:
+            refine_net.load_state_dict(copyStateDict(torch.load(args.refiner_model, map_location='cpu')))
+
+        refine_net.eval()
+        args.poly = True
+
+    t = time.time()
+
+    
     for k, image_path in enumerate(image_list):
-        print("테스트 이미지 {:d}/{:d}: {:s}".format(k+1, len(image_list), image_path), end='\r')
+        print("Test image {:d}/{:d}: {:s}".format(k+1, len(image_list), image_path), end='\r')
         image = imgproc.loadImage(image_path)
 
         bboxes, polys, score_text = test_net(net, image, args.text_threshold, args.link_threshold, args.low_text, args.cuda, args.poly, refine_net)
+        
+        logging.info("pass됌")
+        sorted_bboxes = sorted(bboxes, key=lambda bbox: bbox[0][0])
 
+        for bbox in sorted_bboxes:
+            bbox[0][0] -= 0
+            bbox[0][1] = 5 
+            bbox[1][0] += 0
+            bbox[1][1] = 5
+            bbox[2][0] += 5
+            bbox[2][1] = 120
+            bbox[3][0] -= 5              
+            bbox[3][1] = 120  
+        
+
+        merged_bboxes = []
+        i = 0  # 반복문 인덱스 초기화
+
+        while i < len(sorted_bboxes) - 1:
+            current_bbox = sorted_bboxes[i]
+            next_bbox = sorted_bboxes[i + 1]
+            # print((next_bbox[0][0] - current_bbox[1][0]),(next_bbox[1][0] - current_bbox[0][0]))
+
+            if (next_bbox[0][0] - current_bbox[1][0]) < -3 and (next_bbox[1][0] - current_bbox[0][0]) <80:
+                # Bounding box가 중첩되지 않으면 current_bbox를 결과에 추가
+                print(f"current{current_bbox},\n next{next_bbox}")
+                print((next_bbox[0][0] - current_bbox[1][0]) , (next_bbox[1][0] - current_bbox[0][0]))
+                merged_bbox = [
+                    [min(current_bbox[0][0], next_bbox[0][0]), min(current_bbox[0][1], next_bbox[0][1])],
+                    [max(current_bbox[1][0], next_bbox[1][0]), max(current_bbox[1][1], next_bbox[1][1])],
+                    [max(current_bbox[2][0], next_bbox[2][0]), max(current_bbox[2][1], next_bbox[2][1])],
+                    [min(current_bbox[3][0], next_bbox[3][0]), min(current_bbox[3][1], next_bbox[3][1])]
+                ]
+                # print(merged_bbox)
+                merged_bboxes.append(merged_bbox)
+                i += 2  # 병합되면 다음 반복은 건너뛰기
+            else:
+                # 현재 bbox와 다음 bbox를 병합하지 않고 그대로 추가
+                merged_bboxes.append(current_bbox)
+                i += 1  # 다음 반복으로 이동
+
+        # 남은 마지막 bounding box 추가
+        if i == len(sorted_bboxes) - 1:
+            merged_bboxes.append(sorted_bboxes[-1])
+
+        # for k, bbox in enumerate(merged_bboxes):
+        #     print(k, bbox)
+
+
+        for bbox in merged_bboxes:
+            if (bbox[1][0]-bbox[0][0])>63 :
+                bbox[0][0] -= 1
+                bbox[0][1] = 0 
+                bbox[1][0] += -1
+                bbox[1][1] = 0
+                bbox[2][0] += -1
+                bbox[2][1] = 120
+                bbox[3][0] -= 1              
+                bbox[3][1] = 120     
+
+        
         # 각 단어의 정보를 저장할 리스트 초기화
         word_info_list = []
 
         # 단어 정보 저장
-        for i, box in enumerate(polys if args.poly else bboxes):
+        for i, box in enumerate(polys if args.poly else merged_bboxes):
             # 좌표 값을 정수로 변환
-            box = [int(val) for val in box.flatten()]
+            box_flat = [int(val) for sublist in box for val in sublist]
 
             # 단어 이미지 자르기
-            word_image = image[box[1]:box[5], box[0]:box[2]].copy()
+            word_image = image[box_flat[1]:box_flat[5], box_flat[0]:box_flat[2]].copy()
 
             # 단어 정보 추가
             word_info_list.append({
                 'index': i,
-                'box': box,
+                'box': box_flat,
                 'image': word_image
             })
 
         # 각 단어의 x축 값 기준으로 정렬
         sorted_word_info = sorted(word_info_list, key=lambda x: x['box'][0])
+        
+        
+        if  args.fitsize :
+            for i, word_info in enumerate(sorted_word_info):
+                box = word_info['box']
+                word_image = word_info['image']
 
-        # 정렬된 단어 이미지를 순차적으로 저장
-        for i, word_info in enumerate(sorted_word_info):
-            box = word_info['box']
-            word_image = word_info['image']
+                # 결과 이미지 저장
+                result_filename = os.path.join(output_segmentation_path, f"word_{k}_{i}.jpg")
+                cv2.imwrite(result_filename, word_image)
+                    
+        else :
+            # 정렬된 단어 이미지를 순차적으로 저장
+            for i, word_info in enumerate(sorted_word_info):
+                box = word_info['box']
+                word_image = word_info['image']
 
-            # 새로운 결과 이미지 생성
-            result_image = Image.new('RGB', (target_size[0], target_size[1]), background_color)
+                # 새로운 결과 이미지 생성
+                result_image = np.ones((target_size[1], target_size[0], 3), dtype=np.uint8) * background_color
 
-            # 삽입 위치 계산
-            x_offset = (target_size[0] - word_image.shape[1]) // 2
-            y_offset = (target_size[1] - word_image.shape[0]) // 2
+                # 삽입 위치 계산
+                x_offset = (target_size[0] - word_image.shape[1]) // 2
+                y_offset = (target_size[1] - word_image.shape[0]) // 2
 
-            # 중앙에 이미지 삽입
-            result_image.paste(Image.fromarray(word_image), (x_offset, y_offset))
+                # 중앙에 이미지 삽입
+                result_image[y_offset:y_offset+word_image.shape[0], x_offset:x_offset+word_image.shape[1]] = word_image
 
-            # 결과 이미지 저장
-            result_filename = os.path.join(result_folder2, f"word_{k}_{i}.jpg")
-            result_image.save(result_filename)
+                # 결과 이미지 저장
+                result_filename = os.path.join(output_segmentation_path, f"word_{k}_{i}.jpg")
+                cv2.imwrite(result_filename, result_image)
+
+                # 이미지 크기를 세로를 이미지의 높이로 변경
+                box[5] = box[1] + target_size[1]
+            
+        
+        
     print("elapsed time : {}s".format(time.time() - t))
+
+    
+def parse_arguments():
+
+    parser = argparse.ArgumentParser(description='CRAFT Text Detection')
+    script_directory = os.path.dirname(__file__)
+
+    parser.add_argument('-f','--fitsize',default=False, action='store_true', help='fullsize or fitsize')
+    parser.add_argument('--trained_model', default='model/craft_mlt_25k.pth', type=str, help='pretrained model')
+    parser.add_argument('--text_threshold', default=0.7, type=float, help='text confidence threshold')
+    parser.add_argument('--low_text', default=0.3, type=float, help='text low-bound score')## 높을수록 한글자씩 boxing    0.4 아래부터 글자영역 합쳐짐
+    parser.add_argument('--link_threshold', default=0.9, type=float, help='link confidence threshold') ## 더 split 미세하게 자르기 
+    parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda for inference')
+    parser.add_argument('--canvas_size', default=1280, type=int, help='image size for inference')
+    parser.add_argument('--mag_ratio', default=1.5, type=float, help='image magnification ratio')## 이미지 확대
+    parser.add_argument('--poly', default=False, action='store_true', help='enable polygon type')
+    parser.add_argument('--show_time', default=False, action='store_true', help='show processing time')
+    parser.add_argument('--test_folder', default='input/', type=str, help='folder path to input images')
+    parser.add_argument('--refine', default=False, action='store_true', help='enable link refiner')
+    parser.add_argument('--refiner_model', default='weights/craft_refiner_CTW1500.pth', type=str, help='pretrained refiner model')
+
+    return parser.parse_args()
+
+    
+    
+
+if __name__ == '__main__':
+    args = parse_arguments()
+    
+    image_list, _, _ = file_utils.get_files(args.test_folder)
+    output_visualization_path = './output_visualization/'
+    output_segmentation_path = './output_segmentation/'
+
+    for folder in [output_visualization_path, output_segmentation_path]:
+        os.makedirs(folder, exist_ok=True)
+
+    Save_visualization_image(output_visualization_path)
+    Save_segmentation_image(output_segmentation_path)
+    
+    
+    
+    
+    
