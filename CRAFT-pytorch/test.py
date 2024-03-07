@@ -10,11 +10,9 @@ import time
 import argparse
 
 import torch
-import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torch.autograd import Variable
 
-from PIL import Image
 
 import cv2
 from skimage import io
@@ -22,9 +20,7 @@ import numpy as np
 import craft_utils
 import imgproc
 import file_utils
-import json
-import zipfile
-import logging
+
 
 from craft import CRAFT
 
@@ -112,8 +108,8 @@ def Save_visualization_image(output_visualization_path):
     output_visualization_path = output_visualization_path
     args = parse_arguments()
     net = CRAFT()     
-    target_size = (1625, 120)
-    background_color = (238, 238, 238)
+    # target_size = (1625, 120)
+    # background_color = (238, 238, 238)
     # print('Loading weights from checkpoint (' + args.trained_model + ')')
     if args.cuda:
         net.load_state_dict(copyStateDict(torch.load(args.trained_model)))
@@ -163,6 +159,12 @@ def Save_visualization_image(output_visualization_path):
         
     print("elapsed time : {}s".format(time.time() - t))
     
+def loadGrayscaleImage(img_file):
+    img = cv2.imread(img_file, cv2.IMREAD_GRAYSCALE)  # 이미지를 그레이스케일로 로드
+
+    cv2.imshow("Grayscale Image", img)  # 흑백 이미지를 화면에 표시
+    cv2.waitKey(0)  # 아무 키나 누를 때까지 대기
+    cv2.destroyAllWindows()  #
 
 def Save_segmentation_image(output_segmentation_path):
     output_segmentation_path = output_segmentation_path
@@ -205,21 +207,24 @@ def Save_segmentation_image(output_segmentation_path):
     for k, image_path in enumerate(image_list):
         print("Test image {:d}/{:d}: {:s}".format(k+1, len(image_list), image_path), end='\r')
         image = imgproc.loadImage(image_path)
+        
 
         bboxes, polys, score_text = test_net(net, image, args.text_threshold, args.link_threshold, args.low_text, args.cuda, args.poly, refine_net)
         
-        logging.info("pass됌")
+    
         sorted_bboxes = sorted(bboxes, key=lambda bbox: bbox[0][0])
+
+        # sorted_bboxes = bboxes
 
         for bbox in sorted_bboxes:
             bbox[0][0] -= 0
-            bbox[0][1] = 5 
+            # bbox[0][1] = 5 
             bbox[1][0] += 0
-            bbox[1][1] = 5
+            # bbox[1][1] = 5
             bbox[2][0] += 5
-            bbox[2][1] = 120
+            # bbox[2][1] = 120
             bbox[3][0] -= 5              
-            bbox[3][1] = 120  
+            # bbox[3][1] = 120  
         
 
         merged_bboxes = []
@@ -230,7 +235,7 @@ def Save_segmentation_image(output_segmentation_path):
             next_bbox = sorted_bboxes[i + 1]
             # print((next_bbox[0][0] - current_bbox[1][0]),(next_bbox[1][0] - current_bbox[0][0]))
 
-            if (next_bbox[0][0] - current_bbox[1][0]) < -3 and (next_bbox[1][0] - current_bbox[0][0]) <80:
+            if (next_bbox[0][0] - current_bbox[1][0]) < -3 and (next_bbox[1][   0] - current_bbox[0][0]) <80:
                 # Bounding box가 중첩되지 않으면 current_bbox를 결과에 추가
                 print(f"current{current_bbox},\n next{next_bbox}")
                 print((next_bbox[0][0] - current_bbox[1][0]) , (next_bbox[1][0] - current_bbox[0][0]))
@@ -259,20 +264,86 @@ def Save_segmentation_image(output_segmentation_path):
         for bbox in merged_bboxes:
             if (bbox[1][0]-bbox[0][0])>63 :
                 bbox[0][0] -= 1
-                bbox[0][1] = 0 
+                # bbox[0][1] = 0 
                 bbox[1][0] += -1
-                bbox[1][1] = 0
+                # bbox[1][1] = 0
                 bbox[2][0] += -1
-                bbox[2][1] = 120
+                # bbox[2][1] = 120
                 bbox[3][0] -= 1              
-                bbox[3][1] = 120     
+                # bbox[3][1] = 120     
+                
+                
+        # print(f"before merged_bboxes  : \n {merged_bboxes}")
 
+                
+        grouped_by_y = {}
+        current_group_y = None
+
+        for i, bbox in enumerate(merged_bboxes):
+            y_value = round(bbox[3][1])  # 소수점 이하 값을 반올림하여 정수 형태로 변환
+            if current_group_y is None or abs(y_value - current_group_y) > 35:
+                current_group_y = y_value
+
+            if current_group_y not in grouped_by_y:
+                grouped_by_y[current_group_y] = []
+
+            grouped_by_y[current_group_y].append({'index': i, 'box': bbox})
+
+        # 인접한 그룹들을 병합하는 로직 추가
+        merged_grouped_by_y = {}
+        for y_group, group in sorted(grouped_by_y.items()):
+            merged = False
+            for merged_group_y, merged_group in merged_grouped_by_y.items():
+                if abs(merged_group_y - y_group) <= 10:
+                    merged_grouped_by_y[merged_group_y] += group
+                    merged = True
+                    break
+            if not merged:
+                merged_grouped_by_y[y_group] = group
+                
+                
+        sorted_word_info = OrderedDict()
+
+        # 각 그룹을 정렬하고 정렬된 결과를 삽입합니다.
+        for y_group, group in merged_grouped_by_y.items():
+            sorted_group = sorted(group, key=lambda x: x['box'][0][0])  
+            sorted_word_info[y_group] = sorted_group
+
+        # # 정렬된 결과 출력
+        # for y_group, group in sorted_word_info.items():
+        #     print(f"Y Group: {y_group}")
+        #     for item in group:
+        #         print(f"Index: {item['index']}, Box: {item['box']}")
+        #     print()
+            
+            
+
+
+
+        # 그룹 해제 후 박스들만 남기기
+        boxes_only = []
+        for y_group, group in sorted_word_info.items():
+            for item in group:
+                boxes_only.append(item['box'])
+
+        # 박스들만 남긴 상태에서 정렬된 결과 출력
+        # for box in boxes_only:
+        #     print(f"Box: {box}")
+            
+        sorted_merged_bboxes = boxes_only
         
+        # print(f"after merged_bboxes  : \n {merged_bboxes}")
+        
+        
+        
+            
+        # sorted_bboxes = sorted(bboxes, key=lambda bbox: bbox[0][0])
+            
         # 각 단어의 정보를 저장할 리스트 초기화
         word_info_list = []
 
         # 단어 정보 저장
-        for i, box in enumerate(polys if args.poly else merged_bboxes):
+        for i, box in enumerate(polys if args.poly else sorted_merged_bboxes):
             # 좌표 값을 정수로 변환
             box_flat = [int(val) for sublist in box for val in sublist]
 
@@ -286,14 +357,20 @@ def Save_segmentation_image(output_segmentation_path):
                 'image': word_image
             })
 
+
+        # print(f"word_info_list : \n {word_info_list}")
         # 각 단어의 x축 값 기준으로 정렬
-        sorted_word_info = sorted(word_info_list, key=lambda x: x['box'][0])
+        
+        sorted_word_info = word_info_list
+        
+        # print(f"after_word_info_list : \n {sorted_word_info}")
         
         
         if  args.fitsize :
             for i, word_info in enumerate(sorted_word_info):
                 box = word_info['box']
                 word_image = word_info['image']
+                # print(f"final box : \n {box}")
 
                 # 결과 이미지 저장
                 result_filename = os.path.join(output_segmentation_path, f"word_{k}_{i}.jpg")
