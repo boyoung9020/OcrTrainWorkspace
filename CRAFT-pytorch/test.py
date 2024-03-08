@@ -366,16 +366,20 @@ def Save_segmentation_image(output_segmentation_path):
         # print(f"after_word_info_list : \n {sorted_word_info}")
         
         
-        if  args.fitsize :
+        if args.fitsize:
             for i, word_info in enumerate(sorted_word_info):
                 box = word_info['box']
                 word_image = word_info['image']
-                # print(f"final box : \n {box}")
 
-                # 결과 이미지 저장
-                result_filename = os.path.join(output_segmentation_path, f"word_{k}_{i}.jpg")
-                cv2.imwrite(result_filename, word_image)
-                    
+                # 이미지의 가로세로 크기 확인
+                image_height, image_width, _ = word_image.shape
+
+                if image_width > 30 and image_height > 30:
+                    # 결과 이미지 저장
+                    result_filename = os.path.join(output_segmentation_path, f"word_{k}_{i}.jpg")
+                    cv2.imwrite(result_filename, word_image)
+
+                            
         else :
             # 정렬된 단어 이미지를 순차적으로 저장
             for i, word_info in enumerate(sorted_word_info):
@@ -438,7 +442,7 @@ if __name__ == '__main__':
     for folder in [output_visualization_path, output_segmentation_path]:
         os.makedirs(folder, exist_ok=True)
 
-    Save_visualization_image(output_visualization_path)
+    # Save_visualization_image(output_visualization_path)
     Save_segmentation_image(output_segmentation_path)
     
     
